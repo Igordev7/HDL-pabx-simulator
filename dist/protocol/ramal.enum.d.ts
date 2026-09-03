@@ -1,0 +1,32 @@
+export declare enum RamalStatus {
+    RML_DESOCUPADO = 0,// Ramal desocupado
+    RML_INATIVO = 1,// Ramal Inativo
+    RML_ATIVO = 2,// Ramal Ativo
+    RML_DISCAR = 3,// Ramal vai discar
+    RML_INAPTO = 4,// Ramal inapto
+    RML_CHAMA_RML = 5,// Ramal esta chamando outro ramal
+    RML_CONV_INT = 6,// Ramal esta em conversa��o interna
+    RML_CONV_EXT = 7,// Ramal esta numa liga��o externa sainte
+    RML_DESOCUPAR = 8,// Ramal vai ser desocupado
+    RML_RINGANDO = 9,// Ramal esta ringando
+    RML_RETIDO = 10,// Ramal esta retido por uma transferencia
+    RML_FLASH = 11,// Ramal deu um flash
+    RML_TRANSFERIR = 12,// Ramal esta transferindo uma liga��o
+    RML_CONSULTA = 13,// Ramal esta consultando outro ramal
+    RML_CONSULTADO = 14,// Ramal recebeu uma consulta
+    RML_ESPERA = 15,// Ramal esta com uma chamada em espera(chamando)
+    RML_CONFERENCIA = 16,// Ramal esta em conferencia
+    RML_INAPTO_RECH = 17,// Ramal esta em inapto mas permite rechamada
+    RML_INTERCALADO = 18,// Ramal esta intercalado com outro ramal
+    RML_PROGRAMA = 19,// Ramal esta efetuando uma programa��o
+    RML_DISC_TCO = 20,// Ramal esta efetuando uma discagem sainte autom�tica pelo tronco (mem�ria)
+    RML_VOX = 21,// Ramal esta efetuando recebendo um servi�o da placa de voz
+    RML_RECHAMAR = 22,// Ramal esta iniciando rechamada
+    RML_RECHAMANDO = 23,
+    RML_INTERNET = 24,// Ramal esta na internet
+    RML_CONSULT_EXT = 25,// Ramal esta em consulta externa
+    RML_AUDIO = 26,// Ramal esta em funcao de audio
+    RML_ULTIMO_EST = 27,// Ramal esta em consulta externa
+    RML_SENSOR_PORTA = 28
+}
+export declare const getRamalStatusFromByte: (byte: number) => string;
