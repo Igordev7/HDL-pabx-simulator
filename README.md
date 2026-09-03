@@ -1,3 +1,51 @@
+# pabx-hdl-simulator
+
+Simulador **em processo** da central PABX HDL. Implementa o transporte serial
+do CTI2 e injeta os pacotes que a central enviaria (ligações, acessos,
+alertas/alarmes, envio e recebimento de programações), com um **painel de
+controle HTTP** para disparar os cenários à mão. Serve para rodar e testar o
+CTI2 sem hardware físico.
+
+Repositório **standalone**: o protocolo HDL (enums de comandos/programação/
+função/ramal/resposta + montagem/validação de frame + CRC) está vendorizado
+em `src/protocol/`; a interface `SerialTransport` e o logger são próprios.
+Sem dependência de `electron` nem do código do CTI2.
+
+- `npm run build` → `dist/`  ·  `npm test` → 46 testes  ·  `npm run typecheck`
+
+## Integração no CTI2
+
+O CTI2 consome só o pacote; a "cola" fica de um lado só.
+
+1. **Dependência de desenvolvimento** no `package.json` do CTI2:
+   ```jsonc
+   "devDependencies": {
+     "pabx-hdl-simulator": "file:../pabx-hdl-simulator"   // dev local
+     // ou: "github:<org>/pabx-hdl-simulator#<tag>"
+   }
+   ```
+2. **`createTransport`** (caso `'simulator'`), import dinâmico para não
+   entrar no bundle de produção:
+   ```ts
+   case 'simulator': {
+     const { SimulatedSerialTransport } = await import('pabx-hdl-simulator');
+     return new SimulatedSerialTransport(params);
+   }
+   ```
+3. **`SerialService`** inicia o painel uma vez (singleton que sobrevive a
+   desconexões):
+   ```ts
+   const { SimulatorControlServer } = await import('pabx-hdl-simulator');
+   SimulatorControlServer.iniciar({ onConectar, onDesconectar });
+   ```
+4. `resolveTransportMode` (env `CENTRIX_TRANSPORT` / `--sim` / arquivo
+   `USAR_SIMULADOR`), o log de boot em `main.ts` e o script `dev:sim` são
+   ~10 linhas que **permanecem no CTI2**.
+
+O texto abaixo é o guia de uso a partir do CTI2.
+
+---
+
 # Central simulada (`CENTRIX_TRANSPORT=sim`)
 
 Roda o CTI2 sem central física. O `SimulatedSerialTransport` implementa o mesmo
