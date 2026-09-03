@@ -19,8 +19,9 @@ código do CTI2.
 
 ## Passo a passo — primeira vez
 
-Pré-requisito: o repositório do CTI2 e este repositório **na mesma pasta**
-(irmãos):
+O CTI2 consome o simulador como dependência local (`"pabx-hdl-simulator":
+"file:../pabx-hdl-simulator"` no `package.json`). Então este repositório
+precisa estar **clonado na mesma pasta que o CTI2** (irmãos):
 
 ```
 CTI/
@@ -28,18 +29,18 @@ CTI/
 └─ pabx-hdl-simulator/    ← este repositório
 ```
 
-1. **Compile o simulador:**
+1. **Clone este repositório ao lado do CTI2** (o `dist/` já vem versionado —
+   não precisa buildar):
    ```bash
-   cd pabx-hdl-simulator
-   npm install
-   npm run build          # gera dist/
+   cd ..    # a pasta que contém CTI2/
+   git clone https://github.com/Igordev7/HDL-pabx-simulator.git pabx-hdl-simulator
    ```
 
-2. **Instale a dependência no CTI2** (só uma vez, e sempre que o simulador
-   mudar — `file:` no yarn/npm é cópia, não link):
+2. **Instale no CTI2** (repita sempre que atualizar o simulador — `file:` é
+   cópia, não link):
    ```bash
-   cd ../CTI2
-   yarn install           # o package.json já aponta "pabx-hdl-simulator": "file:../pabx-hdl-simulator"
+   cd CTI2
+   yarn install
    ```
 
 3. **Ligue o modo simulador.** Crie um arquivo vazio chamado `USAR_SIMULADOR`
@@ -233,13 +234,16 @@ A "cola" fica **só do lado do CTI2** (~10 linhas), commitada em
    ```jsonc
    "dependencies": {
      "pabx-hdl-simulator": "file:../pabx-hdl-simulator"
-     // ou, depois de publicar: "github:<org>/pabx-hdl-simulator#<tag>"
    }
    ```
-   (é `dependencies`, não `devDependencies`: o pacote é pequeno, sem deps
-   próprias, e um `import` estático dele precisa existir também nos builds que
-   rodam `--omit=dev`. Em produção o código fica inerte porque
-   `resolveTransportMode()` devolve `real`.)
+   `file:` (não `github:`): pra atualizar basta `git pull` neste repositório e
+   `yarn install` no CTI2 — sem bumpar tag nem editar o `package.json`. O custo
+   é que **cada dev precisa clonar este repo ao lado do CTI2** (o CI também, se
+   for rodar o modo simulador).
+
+   É `dependencies`, não `devDependencies`: um `import` estático do pacote
+   precisa resolver também nos builds `--omit=dev`. Em produção o código fica
+   inerte porque `resolveTransportMode()` devolve `real`.
 
 2. **`createTransport`** (`src/electron/connection/serial/transport/create-transport.ts`):
    ```ts
@@ -334,5 +338,23 @@ npm test            # vitest (46 testes: crc, frame, prog-estado, replay, centra
 npm run test:watch
 ```
 
-Depois de qualquer mudança aqui, rode `npm run build` e `yarn install` no CTI2
-(o `file:` copia, não linka).
+### Publicar uma mudança
+
+O `dist/` é **versionado** (pra o `git pull` já trazer o build pronto). Então:
+
+```bash
+# neste repositório:
+npm run build
+git add -A && git commit -m "..."
+git push
+```
+
+Nas máquinas que usam o simulador:
+
+```bash
+cd ../pabx-hdl-simulator && git pull
+cd ../CTI2 && yarn install        # file: é cópia — precisa reinstalar
+```
+
+Não esqueça o `npm run build` antes do commit — sem ele o `dist/` fica velho e
+o `git pull` traz código-fonte novo com build antigo.
