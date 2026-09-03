@@ -13,99 +13,155 @@ export const PAINEL_HTML = `<!doctype html>
     color-scheme: light dark;
     --bg: #eef1f5;
     --card: #ffffff;
-    --line: #e2e6ec;
-    --text: #1c2430;
-    --muted: #6b7787;
+    --line: #e3e7ee;
+    --line-strong: #cdd4de;
+    --text: #1b2330;
+    --muted: #66717f;
     --accent: #2f6fed;
-    --accent-press: #2456c0;
-    --danger: #e0463b;
-    --ok: #1f9d57;
-    --field: #f5f7fa;
-    --shadow: 0 1px 2px rgba(20,30,45,.06), 0 6px 18px rgba(20,30,45,.06);
+    --accent-weak: color-mix(in srgb, var(--accent) 10%, transparent);
+    --danger: #dc4438;
+    --danger-weak: color-mix(in srgb, var(--danger) 12%, transparent);
+    --ok: #128a4c;
+    --ok-weak: color-mix(in srgb, var(--ok) 12%, transparent);
+    --warn: #b7791f;
+    --field: #f4f6f9;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(20,30,45,.05), 0 8px 24px rgba(20,30,45,.06);
+    --sp: 8px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #14171c; --card: #1e222a; --line: #2c313b; --text: #e7ebf0;
-      --muted: #93a0b1; --accent: #4d86f7; --accent-press: #3b6fd8;
-      --field: #171b21; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+      --bg: #12151a; --card: #1c2027; --line: #2b313b; --line-strong: #3a414d;
+      --text: #e8ecf1; --muted: #98a4b3; --accent: #5088f6;
+      --danger: #ef5a4e; --ok: #26a862; --warn: #d99a3a;
+      --field: #161a20;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.3);
     }
   }
   * { box-sizing: border-box; }
   html, body { background: var(--bg); }
   body {
-    margin: 0; padding: 28px 22px 40px; color: var(--text);
-    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    margin: 0; padding: 28px 20px 48px; color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 980px; margin: 0 auto; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
 
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-  header h1 { font-size: 17px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+  /* ---- header ---- */
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  header h1 { font-size: 17px; font-weight: 660; margin: 0; letter-spacing: -.01em; }
+  .lede { color: var(--muted); margin: 6px 0 24px; font-size: 13px; }
+
+  /* ---- status pill ---- */
   .pill {
-    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-    color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent);
-    border-radius: 999px; padding: 3px 10px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+    color: var(--ok); background: var(--ok-weak);
+    border-radius: 999px; padding: 5px 11px 5px 9px;
   }
-  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
-  .pill.off { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
-  .pill.off::before { background: var(--danger); }
-  .lede { color: var(--muted); margin: 0 0 22px; font-size: 13px; }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.off  { color: var(--danger); background: var(--danger-weak); }
+  .pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
 
+  /* ---- grid + cards ---- */
   .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
   .card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-    padding: 18px; box-shadow: var(--shadow);
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column;
   }
-  .card h2 {
-    font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
-    color: var(--muted); margin: 0 0 14px;
-  }
-  .fields { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-  .field { flex: 1 1 84px; display: flex; flex-direction: column; gap: 4px; }
-  .field span { font-size: 11px; color: var(--muted); font-weight: 600; }
-  .field input[type=number], .field input[type=text] {
-    width: 100%; padding: 8px 10px; font-size: 14px; font-variant-numeric: tabular-nums;
-    background: var(--field); color: var(--text);
-    border: 1px solid var(--line); border-radius: 9px; outline: none;
-  }
-  .field input[type=text] { font-variant-numeric: normal; }
-  .field input:focus, .field select:focus { border-color: var(--accent); }
-  code { font: 11.5px ui-monospace, Menlo, Consolas, monospace; background: var(--field); padding: 1px 4px; border-radius: 4px; }
-  .field select {
-    width: 100%; padding: 8px 10px; font-size: 14px; background: var(--field); color: var(--text);
-    border: 1px solid var(--line); border-radius: 9px; outline: none;
-  }
-  .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-  .toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
   .card.span2 { grid-column: 1 / -1; }
+  .card-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .card-head h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--muted); margin: 0;
+  }
+  .card-head .pill { margin-left: auto; }
 
-  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
-  button {
-    appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
-    padding: 9px 14px; border-radius: 9px; color: #fff; background: var(--accent);
+  /* ---- fields ---- */
+  .fields { display: flex; gap: 12px; flex-wrap: wrap; }
+  .fields + .fields { margin-top: 12px; }
+  .field { flex: 1 1 120px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field > span { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .field input, .field select {
+    width: 100%; padding: 9px 11px; font-size: 14px; font-family: inherit;
+    background: var(--field); color: var(--text);
+    border: 1px solid var(--line-strong); border-radius: 9px; outline: none;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+  .field input[type=number] { font-variant-numeric: tabular-nums; }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-weak);
+  }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
+  code {
+    font: 11.5px ui-monospace, Menlo, Consolas, monospace;
+    background: var(--field); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line);
+  }
+
+  /* ---- buttons: um estilo = um significado ---- */
+  .btns { display: flex; flex-wrap: wrap; gap: var(--sp); margin-top: 14px; }
+  .btn {
+    appearance: none; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px;
+    min-height: 38px; padding: 0 16px; border-radius: 9px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    border: 1px solid transparent; color: #fff; background: var(--accent);
     transition: filter .12s ease, transform .04s ease;
   }
-  button:hover { filter: brightness(1.06); }
-  button:active { transform: translateY(1px); }
-  button.full { width: 100%; }
-  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
-  button.ok { background: var(--ok); }
-  button.danger { background: var(--danger); }
-  .note { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; }
+  .btn:hover { filter: brightness(1.07); }
+  .btn:active { transform: translateY(1px); }
+  .btn.full { width: 100%; }
+  .btn.ok     { background: var(--ok); }
+  .btn.danger { background: var(--danger); }
+  .btn.ghost  { background: transparent; color: var(--text); border-color: var(--line-strong); }
+  .btn.ghost:hover { background: var(--field); filter: none; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; filter: none; transform: none; }
 
-  .logwrap { margin-top: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  /* segmented: escolhas irmãs coladas (ex.: fechaduras) */
+  .segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 9px; overflow: hidden; }
+  .segmented .btn { border: 0; border-radius: 0; background: var(--card); color: var(--text); min-height: 40px; }
+  .segmented .btn + .btn { border-left: 1px solid var(--line-strong); }
+  .segmented .btn:hover { background: var(--field); filter: none; }
+
+  .note { font-size: 11.5px; line-height: 1.5; color: var(--muted); margin: 12px 0 0; }
+  .note b { color: var(--text); font-weight: 600; }
+  .grow { flex: 1; }
+
+  /* ---- Discagem: zona de chamada contextual ---- */
+  .callbox {
+    margin-top: 14px; border: 1px dashed var(--line-strong); border-radius: 10px;
+    padding: 14px; background: var(--field);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .callbox[data-tipo="porteiro"] { border-color: color-mix(in srgb, var(--ok) 45%, var(--line-strong)); background: var(--ok-weak); }
+  .callbox[data-tipo="tocando"]  { border-color: color-mix(in srgb, var(--warn) 45%, var(--line-strong)); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+  .callbox[data-tipo="conversa"] { border-color: color-mix(in srgb, var(--accent) 40%, var(--line-strong)); background: var(--accent-weak); }
+  .callbox-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .callbox-title { font-weight: 650; font-size: 13px; }
+  .callbox-sub { color: var(--muted); font-size: 12px; }
+  .callbox .btns { margin-top: 0; }
+  .muted-hint { color: var(--muted); font-size: 12.5px; }
+
+  /* ---- log ---- */
+  .logwrap { margin-top: 20px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
   .logbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line); }
   .logbar span { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
-  .logbar button { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 12px; }
+  .logbar button { background: transparent; border: 0; color: var(--muted); padding: 4px 8px; font: inherit; font-size: 12px; cursor: pointer; border-radius: 6px; }
+  .logbar button:hover { background: var(--field); }
   #log {
-    margin: 0; padding: 12px 16px; height: 170px; overflow: auto; white-space: pre-wrap;
-    font: 12px/1.6 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--muted);
+    margin: 0; padding: 12px 16px; height: 180px; overflow: auto; white-space: pre-wrap;
+    font: 12px/1.65 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--muted);
   }
   #log b { color: var(--text); font-weight: 600; }
+
   #toast {
     position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
-    background: var(--text); color: var(--card); padding: 10px 18px; border-radius: 10px;
+    background: var(--text); color: var(--card); padding: 11px 18px; border-radius: 10px;
     font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: all .2s ease;
-    box-shadow: 0 8px 30px rgba(0,0,0,.25); max-width: 90vw;
+    box-shadow: 0 10px 34px rgba(0,0,0,.28); max-width: 90vw;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.err { background: var(--danger); color: #fff; }
@@ -115,15 +171,17 @@ export const PAINEL_HTML = `<!doctype html>
 <div class="wrap">
   <header>
     <h1>Central Simulada CTI2</h1>
-    <span class="pill">simulador ativo</span>
+    <span id="conn-pill" class="pill off" style="margin-left:auto">verificando…</span>
   </header>
-  <p class="lede">A central física não está ligada. Os botões abaixo injetam os pacotes direto no CTI.</p>
+  <p class="lede">A central física não está ligada. As ações abaixo injetam os pacotes direto no CTI2.</p>
 
   <div class="grid">
+
+    <!-- ============ CENTRAL ============ -->
     <div class="card span2">
-      <h2>Central emulada <span id="conn-pill" class="pill" style="margin-left:8px">…</span></h2>
+      <div class="card-head"><h2>Central emulada</h2></div>
       <div class="fields">
-        <label class="field" style="flex:2 1 240px">
+        <label class="field" style="flex:2 1 260px">
           <span>Modelo (byte do RES_IDENTIF)</span>
           <select id="modelo">
             <option value="0x10">HDL 4/12</option>
@@ -145,131 +203,138 @@ export const PAINEL_HTML = `<!doctype html>
         </label>
       </div>
       <div class="btns">
-        <button class="ghost" data-go="modelo">Salvar modelo</button>
-        <button class="ok" data-go="conectar">Conectar</button>
-        <button class="ghost" data-go="desconectar">Desconectar</button>
+        <button class="btn" data-go="conectar">Conectar</button>
+        <button class="btn ghost" data-go="desconectar">Desconectar</button>
+        <span class="grow"></span>
+        <button class="btn ghost" data-go="modelo">Salvar modelo</button>
       </div>
       <p class="note" id="modelo-atual">modelo: …</p>
-      <p class="note">O modelo só entra em vigor no próximo <b>Conectar</b> (é o handshake que relê o RES_IDENTIF).</p>
+      <p class="note">O modelo entra em vigor no próximo <b>Conectar</b> (é o handshake que relê o RES_IDENTIF).</p>
     </div>
 
+    <!-- ============ PROGRAMAÇÕES ============ -->
     <div class="card span2">
-      <h2>Programações</h2>
+      <div class="card-head"><h2>Programações</h2></div>
+
       <div class="fields">
-        <label class="field"><span>Receber: nº de ramais</span><input id="rc-ramais" type="number" value="11" min="1" max="250" /></label>
+        <label class="field"><span>Receber — nº de ramais</span><input id="rc-ramais" type="number" value="11" min="1" max="250" /></label>
         <label class="field"><span>Ramal inicial (fixo)</span><input id="rc-inicial" type="number" value="200" /></label>
         <label class="field"><span>Porteiros (últimos N)</span><input id="rc-porteiros" type="number" value="0" min="0" /></label>
         <label class="field"><span>Troncos</span><input id="rc-troncos" type="number" value="4" min="0" /></label>
       </div>
-      <div class="fields" style="margin-top:6px">
+      <div class="fields">
         <label class="field" style="flex:3 1 340px">
-          <span>Replay de captura real (opcional) — caminho de um serial.log</span>
+          <span>Replay (opcional) — caminho de um serial.log real</span>
           <input id="rc-replay" type="text" placeholder="ex.: C:\\...\\dist-electron\\logs\\serial.log" />
         </label>
       </div>
       <div class="btns">
-        <button class="ghost" data-go="receber-config">Salvar config de Receber</button>
+        <button class="btn ghost" data-go="receber-config">Salvar config de Receber</button>
       </div>
-      <p class="note">Aplica no próximo <b>Receber programações</b> do app (o app é quem inicia o SOL_PROGRAMACAO). Com um caminho de replay preenchido, o "Receber" reproduz os frames <code>91</code> daquele arquivo — é a única forma do <b>enviar → confirmar</b> bater 100% (o dump sintético não reflete o que você acabou de enviar, então a confirmação marca "Rejeitado").</p>
-      <div class="fields" style="margin-top:14px">
-        <label class="field" style="flex:2 1 220px">
-          <span>Enviar: resposta da central ao EFE_*</span>
+      <p class="note">Aplica no próximo <b>Receber programações</b> do app (o app é quem inicia o SOL_PROGRAMACAO). Com um caminho de replay preenchido, o "Receber" reproduz os frames <code>91</code> daquele arquivo — é a única forma do <b>enviar → confirmar</b> bater 100%.</p>
+
+      <div class="fields" style="margin-top:16px">
+        <label class="field" style="flex:2 1 260px">
+          <span>Enviar — resposta da central ao EFE_*</span>
           <select id="en-resposta">
-            <option value="ok">RES_OK (aceita tudo)</option>
-            <option value="nok">RES_NOK (rejeita tudo — testa pendência/erro)</option>
-            <option value="timeout">Timeout (não responde — testa retry)</option>
+            <option value="ok">RES_OK — aceita tudo</option>
+            <option value="nok">RES_NOK — rejeita tudo (testa pendência/erro)</option>
+            <option value="timeout">Timeout — não responde (testa retry)</option>
           </select>
         </label>
       </div>
       <div class="btns">
-        <button class="ghost" data-go="enviar-config">Salvar resposta de Envio</button>
-        <button class="ghost" data-go="reset-estado">Resetar estado programado</button>
+        <button class="btn ghost" data-go="enviar-config">Salvar resposta de Envio</button>
+        <button class="btn ghost" data-go="reset-estado">Resetar estado programado</button>
       </div>
-      <p class="note">Com <b>RES_OK</b>, o simulador guarda o que você enviou (flexível, hotline, desvio, toque) e devolve no próximo <b>Receber</b> — aí o <b>enviar → confirmar</b> bate. Os outros campos ainda ficam "pendente".</p>
+      <p class="note">Com <b>RES_OK</b> o simulador guarda o que você enviou (flexível, hotline, desvio, toque) e devolve no próximo <b>Receber</b> — aí o <b>enviar → confirmar</b> bate.</p>
       <p class="note" id="prog-atual">…</p>
     </div>
 
-    <div class="card">
-      <h2>Ligação</h2>
-      <div class="fields">
-        <label class="field"><span>Origem</span><input id="lig-origem" type="number" value="201" /></label>
-        <label class="field"><span>Destino</span><input id="lig-destino" type="number" value="204" /></label>
-        <label class="field"><span>Duração (s)</span><input id="lig-dur" type="number" value="5" min="1" /></label>
-      </div>
-      <label class="toggle"><input id="lig-atende" type="checkbox" checked /> Atendida <span style="opacity:.7">(desmarque = não atendida)</span></label>
-      <div class="btns">
-        <button class="full" data-go="ligacao">Simular ligação</button>
-      </div>
-      <p class="note">Origem e destino precisam existir no cadastro de ramais — senão o CTI trata como linha externa e não grava.</p>
-    </div>
-
-    <div class="card">
-      <h2>Acesso pelo porteiro</h2>
-      <div class="fields">
-        <label class="field"><span>Porteiro</span><input id="ac-porteiro" type="number" value="200" /></label>
-        <label class="field"><span>Ramal / visitante</span><input id="ac-ramal" type="number" value="205" /></label>
-      </div>
-      <div class="btns">
-        <button data-go="acesso">Liberado pelo porteiro</button>
-        <button class="ok" data-go="acesso-senha">Liberado por senha</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Alerta / Alarme</h2>
-      <div class="fields">
-        <label class="field"><span>Zona / ramal</span><input id="ev-zona" type="number" value="205" /></label>
-      </div>
-      <div class="btns">
-        <button data-go="alerta-on">Alerta ativado</button>
-        <button class="ghost" data-go="alerta-off">Alerta desativado</button>
-        <button class="danger" data-go="alarme-on">Alarme disparado</button>
-        <button class="ghost" data-go="alarme-off">Alarme normalizado</button>
-      </div>
-    </div>
-
+    <!-- ============ DISCAGEM ============ -->
     <div class="card span2">
-      <h2>Discagem <span id="disc-estado" class="pill" style="margin-left:8px">livre</span></h2>
-      <p class="note" style="margin:0 0 12px">O ramal <b>Origem</b> está no telefone/interfone. Escolha uma ação e disque.</p>
+      <div class="card-head">
+        <h2>Discagem</h2>
+        <span id="disc-estado" class="pill off">livre</span>
+      </div>
+      <p class="muted-hint" style="margin:-4px 0 4px">O ramal <b>Origem</b> está no telefone/interfone. Escolha uma ação e disque.</p>
+
       <div class="fields">
         <label class="field"><span>Origem (ramal)</span><input id="disc-origem" type="number" value="201" /></label>
-        <label class="field"><span>Ação</span>
+        <label class="field" style="flex:2 1 200px"><span>Ação</span>
           <select id="disc-acao">
             <option value="ligar_ramal">Ligar para ramal</option>
             <option value="ligar_porteiro">Ligar para porteiro</option>
-            <option value="alerta_on">Alerta ativar (*190)</option>
-            <option value="alerta_off">Alerta desativar (*191)</option>
-            <option value="alarme_on">Alarme disparar (*193)</option>
-            <option value="alarme_off">Alarme normalizar (*192)</option>
+            <option value="alerta_on">Ativar alerta (*190)</option>
+            <option value="alerta_off">Desativar alerta (*191)</option>
+            <option value="alarme_on">Disparar alarme (*193)</option>
+            <option value="alarme_off">Normalizar alarme (*192)</option>
           </select>
         </label>
         <label class="field" id="disc-alvo-wrap"><span>Alvo (ramal / porteiro)</span><input id="disc-alvo" type="number" value="204" /></label>
       </div>
       <div class="btns">
-        <button class="ok" data-go="discar">Discar</button>
+        <button class="btn" data-go="discar">Discar</button>
       </div>
-      <div class="btns" id="disc-ramal-toca" style="display:none">
-        <button class="ok" data-go="disc-atender">Atender (*)</button>
-        <button class="ghost" data-go="disc-nao-atender">Não atender</button>
-      </div>
-      <div class="btns" id="disc-ramal-conversa" style="display:none">
-        <button class="danger" data-go="disc-desligar">Desligar</button>
-      </div>
-      <div class="btns" id="disc-porteiro" style="display:none">
-        <button class="ok" data-go="disc-fech-1">Abrir fechadura 1 (*1)</button>
-        <button class="ok" data-go="disc-fech-2">Abrir fechadura 2 (*2)</button>
-        <button class="ghost" data-go="disc-fech-3">Abrir ambas (*3)</button>
-        <button class="danger" data-go="disc-desligar">Desligar</button>
+
+      <div class="callbox" id="disc-callbox" hidden>
+        <div class="callbox-line">
+          <span class="callbox-title" id="disc-cb-title">—</span>
+          <span class="callbox-sub" id="disc-cb-sub"></span>
+        </div>
+        <div id="disc-cb-actions"></div>
       </div>
     </div>
 
+    <!-- ============ LIGAÇÃO (rápida) ============ -->
     <div class="card">
-      <h2>Conexão</h2>
-      <p class="note" style="margin:0 0 12px">Derruba a conexão para exercitar a reconexão automática do CTI.</p>
+      <div class="card-head"><h2>Ligação rápida</h2></div>
+      <div class="fields">
+        <label class="field"><span>Origem</span><input id="lig-origem" type="number" value="201" /></label>
+        <label class="field"><span>Destino</span><input id="lig-destino" type="number" value="204" /></label>
+        <label class="field"><span>Duração (s)</span><input id="lig-dur" type="number" value="5" min="1" /></label>
+      </div>
+      <label class="toggle" style="margin-top:12px"><input id="lig-atende" type="checkbox" checked /> Atendida</label>
+      <div class="btns"><button class="btn full" data-go="ligacao">Simular ligação completa</button></div>
+      <p class="note">Toca → (atende) → desliga num passo só. Origem e destino precisam existir no cadastro de ramais.</p>
+    </div>
+
+    <!-- ============ ACESSO ============ -->
+    <div class="card">
+      <div class="card-head"><h2>Acesso pelo porteiro</h2></div>
+      <div class="fields">
+        <label class="field"><span>Porteiro</span><input id="ac-porteiro" type="number" value="200" /></label>
+        <label class="field"><span>Ramal / visitante</span><input id="ac-ramal" type="number" value="205" /></label>
+      </div>
       <div class="btns">
-        <button class="danger full" data-go="drop">Simular queda de conexão</button>
+        <button class="btn" data-go="acesso">Liberado pelo porteiro</button>
+        <button class="btn ok" data-go="acesso-senha">Liberado por senha</button>
       </div>
     </div>
+
+    <!-- ============ ALERTA / ALARME ============ -->
+    <div class="card">
+      <div class="card-head"><h2>Alerta / Alarme</h2></div>
+      <div class="fields">
+        <label class="field"><span>Zona / ramal</span><input id="ev-zona" type="number" value="205" /></label>
+      </div>
+      <div class="btns">
+        <button class="btn" data-go="alerta-on">Ativar alerta</button>
+        <button class="btn ghost" data-go="alerta-off">Desativar</button>
+      </div>
+      <div class="btns" style="margin-top:8px">
+        <button class="btn danger" data-go="alarme-on">Disparar alarme</button>
+        <button class="btn ghost" data-go="alarme-off">Normalizar</button>
+      </div>
+    </div>
+
+    <!-- ============ CONEXÃO ============ -->
+    <div class="card">
+      <div class="card-head"><h2>Conexão</h2></div>
+      <p class="muted-hint">Derruba a conexão para exercitar a reconexão automática do CTI2.</p>
+      <div class="btns"><button class="btn danger full" data-go="drop">Simular queda de conexão</button></div>
+    </div>
+
   </div>
 
   <div class="logwrap">
@@ -301,109 +366,146 @@ export const PAINEL_HTML = `<!doctype html>
     toastTimer = setTimeout(function () { toastEl.className = ''; }, 2200);
   }
 
-  function hit(path, params, label) {
+  function hit(path, params, label, then) {
     var qs = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
     var url = path + (qs ? '?' + qs : '');
     log('→ ' + label, true);
     fetch(url).then(function (r) { return r.json(); }).then(function (j) {
       log('   ' + JSON.stringify(j));
-      toast(label + ' ✓');
+      toast(label + (j && j.ok === false ? ' — ' + (j.erro || 'falhou') : ' ✓'), j && j.ok === false);
+      if (then) then(j);
     }).catch(function (e) {
       log('   ERRO: ' + e.message);
       toast('Falhou: ' + e.message, true);
     });
   }
+  function discar(params, label) {
+    params.origem = n('disc-origem');
+    hit('/discar', params, label, function () { setTimeout(carregarEstado, 200); });
+  }
 
   var actions = {
     'modelo': function () {
       var m = document.getElementById('modelo');
-      hit('/config', { modelo: m.value }, 'Modelo salvo → ' + m.options[m.selectedIndex].text);
-      setTimeout(carregarEstado, 300);
+      hit('/config', { modelo: m.value }, 'Modelo → ' + m.options[m.selectedIndex].text, function () { setTimeout(carregarEstado, 300); });
     },
-    'conectar': function () {
-      hit('/conectar', {}, 'Conectar central');
-      setTimeout(carregarEstado, 1500);
-    },
-    'desconectar': function () {
-      hit('/desconectar', {}, 'Desconectar central');
-      setTimeout(carregarEstado, 600);
-    },
+    'conectar':    function () { hit('/conectar', {}, 'Conectar central', function () { setTimeout(carregarEstado, 1500); }); },
+    'desconectar': function () { hit('/desconectar', {}, 'Desconectar central', function () { setTimeout(carregarEstado, 600); }); },
     'receber-config': function () {
       hit('/receber-config', {
         ramais: n('rc-ramais'), inicial: n('rc-inicial'),
         porteiros: n('rc-porteiros'), troncos: n('rc-troncos'),
         replay: document.getElementById('rc-replay').value
-      }, 'Config de Receber salva');
-      setTimeout(carregarEstado, 300);
+      }, 'Config de Receber salva', function () { setTimeout(carregarEstado, 300); });
     },
     'enviar-config': function () {
       var s = document.getElementById('en-resposta');
-      hit('/enviar-config', { resposta: s.value }, 'Resposta de Envio → ' + s.value);
-      setTimeout(carregarEstado, 300);
+      hit('/enviar-config', { resposta: s.value }, 'Resposta de Envio → ' + s.value, function () { setTimeout(carregarEstado, 300); });
     },
-    'reset-estado': function () {
-      hit('/receber-config', { resetestado: 1 }, 'Estado programado zerado');
-      setTimeout(carregarEstado, 300);
-    },
+    'reset-estado': function () { hit('/receber-config', { resetestado: 1 }, 'Estado programado zerado', function () { setTimeout(carregarEstado, 300); }); },
     'ligacao': function () {
       var atende = ck('lig-atende');
       hit('/ligacao', { origem: n('lig-origem'), destino: n('lig-destino'), duracao: n('lig-dur'), atende: atende },
         'Ligação ' + n('lig-origem') + ' → ' + n('lig-destino') + (atende ? ' (atendida ' + n('lig-dur') + 's)' : ' (não atendida)'));
     },
-    'acesso': function () {
-      hit('/acesso', { porteiro: n('ac-porteiro'), ramal: n('ac-ramal') },
-        'Acesso pelo porteiro ' + n('ac-porteiro') + ' / ramal ' + n('ac-ramal'));
-    },
-    'acesso-senha': function () {
-      hit('/acesso-senha', { porteiro: n('ac-porteiro'), ramal: n('ac-ramal') },
-        'Acesso por senha ' + n('ac-porteiro') + ' / ramal ' + n('ac-ramal'));
-    },
-    'alerta-on':  function () { hit('/alerta',  { zona: n('ev-zona'), ativado: 1 },   'Alerta ativado — zona ' + n('ev-zona')); },
-    'alerta-off': function () { hit('/alerta',  { zona: n('ev-zona'), ativado: 0 },   'Alerta desativado — zona ' + n('ev-zona')); },
-    'alarme-on':  function () { hit('/alarme',  { zona: n('ev-zona'), disparado: 1 }, 'Alarme disparado — zona ' + n('ev-zona')); },
-    'alarme-off': function () { hit('/alarme',  { zona: n('ev-zona'), disparado: 0 }, 'Alarme normalizado — zona ' + n('ev-zona')); },
+    'acesso':       function () { hit('/acesso', { porteiro: n('ac-porteiro'), ramal: n('ac-ramal') }, 'Acesso pelo porteiro ' + n('ac-porteiro')); },
+    'acesso-senha': function () { hit('/acesso-senha', { porteiro: n('ac-porteiro'), ramal: n('ac-ramal') }, 'Acesso por senha ' + n('ac-porteiro')); },
+    'alerta-on':  function () { hit('/alerta', { zona: n('ev-zona'), ativado: 1 },   'Alerta ativado — zona ' + n('ev-zona')); },
+    'alerta-off': function () { hit('/alerta', { zona: n('ev-zona'), ativado: 0 },   'Alerta desativado — zona ' + n('ev-zona')); },
+    'alarme-on':  function () { hit('/alarme', { zona: n('ev-zona'), disparado: 1 }, 'Alarme disparado — zona ' + n('ev-zona')); },
+    'alarme-off': function () { hit('/alarme', { zona: n('ev-zona'), disparado: 0 }, 'Alarme normalizado — zona ' + n('ev-zona')); },
     'discar': function () {
       var acao = document.getElementById('disc-acao').value;
-      hit('/discar', { origem: n('disc-origem'), acao: acao, alvo: n('disc-alvo') },
-        'Discar: ' + acao + ' (origem ' + n('disc-origem') + ')');
-      setTimeout(carregarEstado, 250);
+      discar({ acao: acao, alvo: n('disc-alvo') }, 'Discar: ' + document.getElementById('disc-acao').selectedOptions[0].text);
     },
-    'disc-atender':     function () { hit('/discar', { origem: n('disc-origem'), acao: 'atender' },     'Atender'); setTimeout(carregarEstado, 250); },
-    'disc-nao-atender': function () { hit('/discar', { origem: n('disc-origem'), acao: 'nao_atender' }, 'Não atender'); setTimeout(carregarEstado, 250); },
-    'disc-desligar':    function () { hit('/discar', { origem: n('disc-origem'), acao: 'desligar' },    'Desligar'); setTimeout(carregarEstado, 250); },
-    'disc-fech-1': function () { hit('/discar', { origem: n('disc-origem'), acao: 'fechadura', fech: 1 }, 'Abrir fechadura 1 (*1)'); },
-    'disc-fech-2': function () { hit('/discar', { origem: n('disc-origem'), acao: 'fechadura', fech: 2 }, 'Abrir fechadura 2 (*2)'); },
-    'disc-fech-3': function () { hit('/discar', { origem: n('disc-origem'), acao: 'fechadura', fech: 3 }, 'Abrir ambas (*3)'); },
-    'drop':       function () { hit('/drop', {}, 'Queda de conexão'); }
+    'disc-atender':     function () { discar({ acao: 'atender' }, 'Atender'); },
+    'disc-nao-atender': function () { discar({ acao: 'nao_atender' }, 'Recusar'); },
+    'disc-desligar':    function () { discar({ acao: 'desligar' }, 'Desligar'); },
+    'disc-fech-1': function () { discar({ acao: 'fechadura', fech: 1 }, 'Abrir fechadura 1 (*1)'); },
+    'disc-fech-2': function () { discar({ acao: 'fechadura', fech: 2 }, 'Abrir fechadura 2 (*2)'); },
+    'disc-fech-3': function () { discar({ acao: 'fechadura', fech: 3 }, 'Abrir ambas (*3)'); },
+    'drop': function () { hit('/drop', {}, 'Queda de conexão'); }
   };
 
-  // Alvo só faz sentido pras duas ações "Ligar para ...".
+  // "Alvo" só aparece nas duas ações "Ligar para ...".
   document.getElementById('disc-acao').addEventListener('change', function () {
     var lig = this.value === 'ligar_ramal' || this.value === 'ligar_porteiro';
     document.getElementById('disc-alvo-wrap').style.display = lig ? '' : 'none';
   });
 
-  document.querySelectorAll('button[data-go]').forEach(function (b) {
-    b.addEventListener('click', function () { actions[b.dataset.go](); });
+  document.body.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-go]');
+    if (b && actions[b.dataset.go]) actions[b.dataset.go]();
   });
   document.getElementById('clear').addEventListener('click', function () { logEl.textContent = ''; });
+
+  // ---- render da chamada em andamento (card Discagem) ----
+  function renderChamada(c) {
+    var pill = document.getElementById('disc-estado');
+    var box = document.getElementById('disc-callbox');
+    var title = document.getElementById('disc-cb-title');
+    var sub = document.getElementById('disc-cb-sub');
+    var acts = document.getElementById('disc-cb-actions');
+
+    if (!c) {
+      pill.textContent = 'livre'; pill.className = 'pill off';
+      box.hidden = true; box.removeAttribute('data-tipo'); acts.innerHTML = '';
+      return;
+    }
+
+    if (c.tipo === 'porteiro') {
+      pill.textContent = 'no porteiro ' + c.alvo; pill.className = 'pill';
+      box.dataset.tipo = 'porteiro';
+      title.textContent = 'Em conversa com o porteiro ' + c.alvo;
+      sub.textContent = 'ramal ' + c.origem + ' — disque *1 / *2 / *3 para abrir';
+      acts.innerHTML =
+        '<div class="callbox-line">' +
+          '<div class="segmented">' +
+            '<button class="btn" data-go="disc-fech-1">Fechadura 1 · *1</button>' +
+            '<button class="btn" data-go="disc-fech-2">Fechadura 2 · *2</button>' +
+            '<button class="btn" data-go="disc-fech-3">Ambas · *3</button>' +
+          '</div>' +
+          '<span class="grow"></span>' +
+          '<button class="btn danger" data-go="disc-desligar">Desligar</button>' +
+        '</div>';
+    } else if (c.estado === 'tocando') {
+      pill.textContent = 'tocando'; pill.className = 'pill warn';
+      box.dataset.tipo = 'tocando';
+      title.textContent = 'Chamando ' + c.alvo;
+      sub.textContent = 'de ' + c.origem + ' — o ramal ' + c.alvo + ' está tocando';
+      acts.innerHTML =
+        '<div class="btns">' +
+          '<button class="btn ok" data-go="disc-atender">Atender</button>' +
+          '<button class="btn ghost" data-go="disc-nao-atender">Recusar</button>' +
+        '</div>';
+    } else {
+      pill.textContent = 'em conversa'; pill.className = 'pill';
+      box.dataset.tipo = 'conversa';
+      title.textContent = 'Em conversa ' + c.origem + ' → ' + c.alvo;
+      sub.textContent = 'chamada atendida';
+      acts.innerHTML =
+        '<div class="btns"><button class="btn danger" data-go="disc-desligar">Desligar</button></div>';
+    }
+    box.hidden = false;
+  }
 
   function carregarEstado() {
     fetch('/estado').then(function (r) { return r.json(); }).then(function (j) {
       if (!j) return;
       var pill = document.getElementById('conn-pill');
-      pill.textContent = j.conectado ? 'conectada' : 'desconectada';
+      pill.textContent = j.conectado ? 'central conectada' : 'central desconectada';
       pill.className = 'pill' + (j.conectado ? '' : ' off');
+
       if (j.modelo) {
         document.getElementById('modelo-atual').textContent =
-          'modelo: ' + j.modelo.nome + ' (0x' + j.modelo.byte.toString(16) + ')';
+          'modelo atual: ' + j.modelo.nome + ' (0x' + j.modelo.byte.toString(16) + ')';
         var sel = document.getElementById('modelo');
         var alvo = '0x' + j.modelo.byte.toString(16);
         for (var i = 0; i < sel.options.length; i++) {
           if (sel.options[i].value === alvo) { sel.selectedIndex = i; break; }
         }
       }
-      if (j.receber) {
+      if (j.receber && document.activeElement.tagName !== 'INPUT') {
         document.getElementById('rc-ramais').value = j.receber.qtdRamais;
         document.getElementById('rc-inicial').value = j.receber.ramalInicial;
         document.getElementById('rc-porteiros').value = j.receber.qtdPorteiros;
@@ -417,31 +519,11 @@ export const PAINEL_HTML = `<!doctype html>
         var origem = j.replay ? 'replay (' + j.replay + ')'
           : (j.receber ? j.receber.qtdRamais + ' ramais a partir de ' + j.receber.ramalInicial + ' (' + j.receber.qtdPorteiros + ' porteiros)' : '?');
         document.getElementById('prog-atual').textContent =
-          'receber: ' + origem + '  •  enviar: ' + j.respostaEnvio +
-          '  •  ramais programados na sessão: ' + (j.ramaisProgramados || 0);
+          'receber: ' + origem + '   •   enviar: ' + j.respostaEnvio +
+          '   •   ramais programados na sessão: ' + (j.ramaisProgramados || 0);
       }
       renderChamada(j.chamada);
     }).catch(function () {});
-  }
-
-  function renderChamada(c) {
-    var pill = document.getElementById('disc-estado');
-    var toca = document.getElementById('disc-ramal-toca');
-    var conv = document.getElementById('disc-ramal-conversa');
-    var port = document.getElementById('disc-porteiro');
-    toca.style.display = conv.style.display = port.style.display = 'none';
-    if (!c) { pill.textContent = 'livre'; pill.className = 'pill off'; return; }
-    pill.className = 'pill';
-    if (c.tipo === 'porteiro') {
-      pill.textContent = 'porteiro ' + c.alvo;
-      port.style.display = '';
-    } else if (c.estado === 'tocando') {
-      pill.textContent = 'tocando ' + c.origem + ' → ' + c.alvo;
-      toca.style.display = '';
-    } else {
-      pill.textContent = 'em conversa ' + c.origem + ' → ' + c.alvo;
-      conv.style.display = '';
-    }
   }
   setInterval(carregarEstado, 4000);
 
