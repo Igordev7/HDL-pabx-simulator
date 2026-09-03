@@ -9,6 +9,7 @@ import {
   getCaminhoReplay,
   getConfigRecebimento,
   getModeloSimulado,
+  getChamadaAtiva,
   getRespostaEnvio,
   getSimuladorAtivo,
   setCaminhoReplay,
@@ -135,6 +136,7 @@ export class SimulatorControlServer {
           receber: getConfigRecebimento(),
           replay: getCaminhoReplay(),
           ramaisProgramados: getRamalOverrides().size,
+          chamada: getChamadaAtiva(),
         });
         return;
 
@@ -252,6 +254,18 @@ export class SimulatorControlServer {
           const disparado = flag('disparado', true);
           sim.simularAlarme(zona, disparado);
           return { cenario: 'alarme', zona, disparado };
+        });
+        return;
+
+      case '/discar':
+        comSimulador((sim) => {
+          const origem = inteiro('origem', 201);
+          const acao = url.searchParams.get('acao') ?? '';
+          const alvo = inteiro('alvo', 200);
+          const fechRaw = inteiro('fech', 1);
+          const fech = (fechRaw === 2 ? 2 : fechRaw === 3 ? 3 : 1) as 1 | 2 | 3;
+          const r = sim.simularDiscagem(origem, acao, alvo, fech);
+          return { cenario: 'discar', origem, acao, alvo, ...r };
         });
         return;
 

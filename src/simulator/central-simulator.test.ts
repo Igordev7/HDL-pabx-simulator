@@ -11,6 +11,7 @@ import {
   getModeloSimulado,
   setRespostaEnvio,
   setConfigRecebimento,
+  setChamadaAtiva,
 } from './runtime.js';
 import { limparProgEstado } from './prog-estado.js';
 
@@ -167,6 +168,82 @@ describe('CentralSimulator — cenário de ligação', () => {
     sim.simularLigacao();
     await vi.advanceTimersByTimeAsync(10000);
     expect(emitidos.length).toBe(antes);
+  });
+});
+
+describe('CentralSimulator — discagem imersiva', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setChamadaAtiva(null);
+  });
+  afterEach(() => {
+    setChamadaAtiva(null);
+    vi.useRealTimers();
+  });
+
+  it('ligar_ramal toca e só vira conversa ao atender; desligar encerra', async () => {
+    const { sim, emitidos } = novoSimulador();
+    sim.start();
+
+    let r = sim.simularDiscagem(201, 'ligar_ramal', 202);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(r.chamada).toMatchObject({ tipo: 'ramal', estado: 'tocando' });
+    let q = framesDoComando(emitidos, ComandosPABX.INFO_RAMAL_TDI);
+    expect(q.map((f) => f[4])).toEqual([RamalStatus.RML_RINGANDO]);
+
+    r = sim.simularDiscagem(201, 'atender');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(r.chamada?.estado).toBe('conversa');
+    q = framesDoComando(emitidos, ComandosPABX.INFO_RAMAL_TDI);
+    expect(q.map((f) => f[4])).toEqual([
+      RamalStatus.RML_RINGANDO,
+      RamalStatus.RML_CONV_INT,
+    ]);
+
+    r = sim.simularDiscagem(201, 'desligar');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(r.chamada).toBeNull();
+    q = framesDoComando(emitidos, ComandosPABX.INFO_RAMAL_TDI);
+    expect(q[q.length - 1][4]).toBe(RamalStatus.RML_DESOCUPADO);
+
+    sim.stop();
+  });
+
+  it('ligar_porteiro entra em conversa e *1/*2/*3 emitem INFO_DISCAGEM_TDI FUNC_PORTEIRO', async () => {
+    const { sim, emitidos } = novoSimulador();
+    sim.start();
+
+    const r = sim.simularDiscagem(205, 'ligar_porteiro', 200);
+    expect(r.chamada).toMatchObject({ tipo: 'porteiro', estado: 'conversa' });
+
+    sim.simularDiscagem(205, 'fechadura', 200, 2);
+    await vi.advanceTimersByTimeAsync(10);
+
+    const [disc] = framesDoComando(emitidos, ComandosPABX.INFO_DISCAGEM_TDI);
+    expect(disc).toBeDefined();
+    expect(validateFrame(disc)).toBeNull();
+    expect(disc[7]).toBe(FuncaoPABX.FUNC_PORTEIRO); // frame[7] = função
+    expect(disc[10]).toBe(2); // sub-estado = fechadura 2
+
+    sim.simularDiscagem(205, 'desligar');
+    sim.stop();
+  });
+
+  it('*190/*191/*193/*192 disparam alerta/alarme sem abrir chamada', async () => {
+    const { sim, emitidos } = novoSimulador();
+    sim.start();
+
+    for (const acao of ['alerta_on', 'alerta_off', 'alarme_on', 'alarme_off']) {
+      const r = sim.simularDiscagem(207, acao);
+      expect(r.chamada).toBeNull();
+    }
+    await vi.advanceTimersByTimeAsync(10);
+
+    const disc = framesDoComando(emitidos, ComandosPABX.INFO_DISCAGEM_TDI);
+    expect(disc.length).toBe(4);
+    expect(disc.every((f) => validateFrame(f) === null)).toBe(true);
+
+    sim.stop();
   });
 });
 

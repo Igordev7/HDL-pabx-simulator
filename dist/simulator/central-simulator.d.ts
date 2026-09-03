@@ -1,3 +1,4 @@
+import { getChamadaAtiva } from './runtime.js';
 type PushFrame = (frameBytes: number[]) => void;
 /**
  * O "cérebro" da central simulada. Puro: não conhece stream, porta serial nem
@@ -24,6 +25,24 @@ export declare class CentralSimulator {
     simularAcessoSenha(porteiroFixo?: number, ramalFixo?: number): void;
     simularAlerta(zonaFixo?: number, ativado?: boolean): void;
     simularAlarme(zonaFixo?: number, disparado?: boolean): void;
+    simularAcionamentoFechadura(porteiroFixo?: number, ramalFixo?: number, fechadura?: 1 | 2 | 3): void;
+    /**
+     * Sessão de discagem imersiva do painel — o morador está "no telefone/
+     * interfone" (ramal `origemFixo`) e disca uma ação:
+     *
+     * - `alerta_on/off`, `alarme_on/off` — códigos `*190`..`*193`;
+     * - `ligar_ramal` — envia só o "toca" e fica aguardando `atender` /
+     *   `nao_atender` / `desligar`;
+     * - `ligar_porteiro` — entra em conversa com o porteiro; habilita
+     *   `fechadura` (`*1`/`*2`/`*3`);
+     * - `atender` / `nao_atender` / `desligar` — encerram/avançam a chamada
+     *   de ramal em andamento;
+     * - `fechadura` — aciona a fechadura durante a conversa com o porteiro.
+     */
+    simularDiscagem(origemFixo: number, acao: string, alvoFixo?: number, fechadura?: 1 | 2 | 3): {
+        estado: string;
+        chamada: ReturnType<typeof getChamadaAtiva>;
+    };
     private responder;
     private executarCenario;
     private frameResposta;

@@ -2,8 +2,8 @@ import { buildFrame, parseFrame, validateFrame, } from '../protocol/frame.js';
 import { ComandosPABX, getCommandNameFromEnum, } from '../protocol/comandos.enum.js';
 import { InfoRespostaPABX } from '../protocol/info-resposta.enum.js';
 import { logger } from '../logger.js';
-import { cenarioAcessoPorteiro, cenarioAcessoSenha, cenarioAlarme, cenarioAlerta, cenarioLigacao, cenarioReceberProgramacoes, } from './scenarios.js';
-import { getCaminhoReplay, getConfigRecebimento, getModeloSimulado, getRespostaEnvio, } from './runtime.js';
+import { cenarioAcessoPorteiro, cenarioAcessoSenha, cenarioAcionamentoFechadura, cenarioAlarme, cenarioAlerta, cenarioLigacao, cenarioReceberProgramacoes, frameLigacaoConversa, frameLigacaoDesliga, frameLigacaoToca, } from './scenarios.js';
+import { getCaminhoReplay, getChamadaAtiva, getConfigRecebimento, getModeloSimulado, getRespostaEnvio, setChamadaAtiva, } from './runtime.js';
 import { cenarioReplayCaptura } from './replay.js';
 import { aplicarEfe } from './prog-estado.js';
 /** De quanto em quanto tempo a central simulada emite um quadro de relógio. */
@@ -86,6 +86,83 @@ export class CentralSimulator {
     }
     simularAlarme(zonaFixo = 205, disparado = true) {
         this.executarCenario(cenarioAlarme(zonaFixo, disparado), `alarme ${disparado ? 'disparado' : 'normalizado'} na zona ${zonaFixo}`);
+    }
+    simularAcionamentoFechadura(porteiroFixo = 200, ramalFixo = 205, fechadura = 1) {
+        this.executarCenario(cenarioAcionamentoFechadura(porteiroFixo, ramalFixo, fechadura), `fechadura ${fechadura === 3 ? '1+2' : fechadura} do porteiro ` +
+            `${porteiroFixo} (ramal ${ramalFixo})`);
+    }
+    /**
+     * Sessão de discagem imersiva do painel — o morador está "no telefone/
+     * interfone" (ramal `origemFixo`) e disca uma ação:
+     *
+     * - `alerta_on/off`, `alarme_on/off` — códigos `*190`..`*193`;
+     * - `ligar_ramal` — envia só o "toca" e fica aguardando `atender` /
+     *   `nao_atender` / `desligar`;
+     * - `ligar_porteiro` — entra em conversa com o porteiro; habilita
+     *   `fechadura` (`*1`/`*2`/`*3`);
+     * - `atender` / `nao_atender` / `desligar` — encerram/avançam a chamada
+     *   de ramal em andamento;
+     * - `fechadura` — aciona a fechadura durante a conversa com o porteiro.
+     */
+    simularDiscagem(origemFixo, acao, alvoFixo = 200, fechadura = 1) {
+        switch (acao) {
+            case 'alerta_on':
+                this.simularAlerta(origemFixo, true);
+                break;
+            case 'alerta_off':
+                this.simularAlerta(origemFixo, false);
+                break;
+            case 'alarme_on':
+                this.simularAlarme(origemFixo, true);
+                break;
+            case 'alarme_off':
+                this.simularAlarme(origemFixo, false);
+                break;
+            case 'ligar_ramal':
+                this.responderEm(0, frameLigacaoToca(origemFixo, alvoFixo));
+                setChamadaAtiva({
+                    origem: origemFixo,
+                    alvo: alvoFixo,
+                    tipo: 'ramal',
+                    estado: 'tocando',
+                });
+                break;
+            case 'ligar_porteiro':
+                setChamadaAtiva({
+                    origem: origemFixo,
+                    alvo: alvoFixo,
+                    tipo: 'porteiro',
+                    estado: 'conversa',
+                });
+                break;
+            case 'atender': {
+                const c = getChamadaAtiva();
+                if (c?.tipo === 'ramal') {
+                    this.responderEm(0, frameLigacaoConversa(c.origem, c.alvo));
+                    setChamadaAtiva({ ...c, estado: 'conversa' });
+                }
+                break;
+            }
+            case 'nao_atender':
+            case 'desligar': {
+                const c = getChamadaAtiva();
+                if (c?.tipo === 'ramal') {
+                    this.responderEm(0, frameLigacaoDesliga(c.alvo));
+                }
+                setChamadaAtiva(null);
+                break;
+            }
+            case 'fechadura': {
+                const c = getChamadaAtiva();
+                const porteiro = c?.tipo === 'porteiro' ? c.alvo : alvoFixo;
+                this.simularAcionamentoFechadura(porteiro, origemFixo, fechadura);
+                break;
+            }
+            default:
+                logger.warn(`[SIM][DISCAGEM] ação desconhecida: "${acao}"`);
+        }
+        const chamada = getChamadaAtiva();
+        return { estado: chamada ? chamada.estado : 'livre', chamada };
     }
     // -------------------------------------------------------------------------
     // Respostas a comandos do CTI

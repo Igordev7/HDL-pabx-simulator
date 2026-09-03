@@ -228,6 +228,41 @@ export const PAINEL_HTML = `<!doctype html>
       </div>
     </div>
 
+    <div class="card span2">
+      <h2>Discagem <span id="disc-estado" class="pill" style="margin-left:8px">livre</span></h2>
+      <p class="note" style="margin:0 0 12px">O ramal <b>Origem</b> está no telefone/interfone. Escolha uma ação e disque.</p>
+      <div class="fields">
+        <label class="field"><span>Origem (ramal)</span><input id="disc-origem" type="number" value="201" /></label>
+        <label class="field"><span>Ação</span>
+          <select id="disc-acao">
+            <option value="ligar_ramal">Ligar para ramal</option>
+            <option value="ligar_porteiro">Ligar para porteiro</option>
+            <option value="alerta_on">Alerta ativar (*190)</option>
+            <option value="alerta_off">Alerta desativar (*191)</option>
+            <option value="alarme_on">Alarme disparar (*193)</option>
+            <option value="alarme_off">Alarme normalizar (*192)</option>
+          </select>
+        </label>
+        <label class="field" id="disc-alvo-wrap"><span>Alvo (ramal / porteiro)</span><input id="disc-alvo" type="number" value="204" /></label>
+      </div>
+      <div class="btns">
+        <button class="ok" data-go="discar">Discar</button>
+      </div>
+      <div class="btns" id="disc-ramal-toca" style="display:none">
+        <button class="ok" data-go="disc-atender">Atender (*)</button>
+        <button class="ghost" data-go="disc-nao-atender">Não atender</button>
+      </div>
+      <div class="btns" id="disc-ramal-conversa" style="display:none">
+        <button class="danger" data-go="disc-desligar">Desligar</button>
+      </div>
+      <div class="btns" id="disc-porteiro" style="display:none">
+        <button class="ok" data-go="disc-fech-1">Abrir fechadura 1 (*1)</button>
+        <button class="ok" data-go="disc-fech-2">Abrir fechadura 2 (*2)</button>
+        <button class="ghost" data-go="disc-fech-3">Abrir ambas (*3)</button>
+        <button class="danger" data-go="disc-desligar">Desligar</button>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Conexão</h2>
       <p class="note" style="margin:0 0 12px">Derruba a conexão para exercitar a reconexão automática do CTI.</p>
@@ -327,8 +362,26 @@ export const PAINEL_HTML = `<!doctype html>
     'alerta-off': function () { hit('/alerta',  { zona: n('ev-zona'), ativado: 0 },   'Alerta desativado — zona ' + n('ev-zona')); },
     'alarme-on':  function () { hit('/alarme',  { zona: n('ev-zona'), disparado: 1 }, 'Alarme disparado — zona ' + n('ev-zona')); },
     'alarme-off': function () { hit('/alarme',  { zona: n('ev-zona'), disparado: 0 }, 'Alarme normalizado — zona ' + n('ev-zona')); },
+    'discar': function () {
+      var acao = document.getElementById('disc-acao').value;
+      hit('/discar', { origem: n('disc-origem'), acao: acao, alvo: n('disc-alvo') },
+        'Discar: ' + acao + ' (origem ' + n('disc-origem') + ')');
+      setTimeout(carregarEstado, 250);
+    },
+    'disc-atender':     function () { hit('/discar', { origem: n('disc-origem'), acao: 'atender' },     'Atender'); setTimeout(carregarEstado, 250); },
+    'disc-nao-atender': function () { hit('/discar', { origem: n('disc-origem'), acao: 'nao_atender' }, 'Não atender'); setTimeout(carregarEstado, 250); },
+    'disc-desligar':    function () { hit('/discar', { origem: n('disc-origem'), acao: 'desligar' },    'Desligar'); setTimeout(carregarEstado, 250); },
+    'disc-fech-1': function () { hit('/discar', { origem: n('disc-origem'), acao: 'fechadura', fech: 1 }, 'Abrir fechadura 1 (*1)'); },
+    'disc-fech-2': function () { hit('/discar', { origem: n('disc-origem'), acao: 'fechadura', fech: 2 }, 'Abrir fechadura 2 (*2)'); },
+    'disc-fech-3': function () { hit('/discar', { origem: n('disc-origem'), acao: 'fechadura', fech: 3 }, 'Abrir ambas (*3)'); },
     'drop':       function () { hit('/drop', {}, 'Queda de conexão'); }
   };
+
+  // Alvo só faz sentido pras duas ações "Ligar para ...".
+  document.getElementById('disc-acao').addEventListener('change', function () {
+    var lig = this.value === 'ligar_ramal' || this.value === 'ligar_porteiro';
+    document.getElementById('disc-alvo-wrap').style.display = lig ? '' : 'none';
+  });
 
   document.querySelectorAll('button[data-go]').forEach(function (b) {
     b.addEventListener('click', function () { actions[b.dataset.go](); });
@@ -367,7 +420,28 @@ export const PAINEL_HTML = `<!doctype html>
           'receber: ' + origem + '  •  enviar: ' + j.respostaEnvio +
           '  •  ramais programados na sessão: ' + (j.ramaisProgramados || 0);
       }
+      renderChamada(j.chamada);
     }).catch(function () {});
+  }
+
+  function renderChamada(c) {
+    var pill = document.getElementById('disc-estado');
+    var toca = document.getElementById('disc-ramal-toca');
+    var conv = document.getElementById('disc-ramal-conversa');
+    var port = document.getElementById('disc-porteiro');
+    toca.style.display = conv.style.display = port.style.display = 'none';
+    if (!c) { pill.textContent = 'livre'; pill.className = 'pill off'; return; }
+    pill.className = 'pill';
+    if (c.tipo === 'porteiro') {
+      pill.textContent = 'porteiro ' + c.alvo;
+      port.style.display = '';
+    } else if (c.estado === 'tocando') {
+      pill.textContent = 'tocando ' + c.origem + ' → ' + c.alvo;
+      toca.style.display = '';
+    } else {
+      pill.textContent = 'em conversa ' + c.origem + ' → ' + c.alvo;
+      conv.style.display = '';
+    }
   }
   setInterval(carregarEstado, 4000);
 

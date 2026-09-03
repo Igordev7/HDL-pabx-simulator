@@ -134,6 +134,36 @@ export function setConfigRecebimento(patch: Partial<ConfigRecebimento>): void {
 let simuladorAtivo: CentralSimulator | null = null;
 let acaoQueda: (() => void) | null = null;
 
+// ---------------------------------------------------------------------------
+// Chamada em andamento no card "Discagem" — só pro painel mostrar o estado e
+// os botões contextuais (Atender / Desligar / Abrir fechadura).
+// ---------------------------------------------------------------------------
+
+export interface ChamadaAtiva {
+  origem: number;
+  alvo: number;
+  tipo: 'ramal' | 'porteiro';
+  estado: 'tocando' | 'conversa';
+}
+
+let chamadaAtiva: ChamadaAtiva | null = null;
+
+export function getChamadaAtiva(): ChamadaAtiva | null {
+  return chamadaAtiva;
+}
+
+export function setChamadaAtiva(c: ChamadaAtiva | null): void {
+  chamadaAtiva = c;
+  if (c) {
+    logger.info(
+      `[SIM][DISCAGEM] chamada ${c.origem} -> ${c.alvo} ` +
+        `(${c.tipo}, ${c.estado})`
+    );
+  } else {
+    logger.info('[SIM][DISCAGEM] chamada encerrada');
+  }
+}
+
 /** Registrado pelo transporte simulado enquanto está aberto. */
 export function registrarSimuladorAtivo(
   sim: CentralSimulator | null,

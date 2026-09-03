@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import { logger } from '../logger.js';
 import { PAINEL_HTML } from './control-panel.html.js';
 import { getRamalOverrides, limparProgEstado } from './prog-estado.js';
-import { dispararQuedaSimulada, getCaminhoReplay, getConfigRecebimento, getModeloSimulado, getRespostaEnvio, getSimuladorAtivo, setCaminhoReplay, setConfigRecebimento, setModeloSimulado, setRespostaEnvio, } from './runtime.js';
+import { dispararQuedaSimulada, getCaminhoReplay, getConfigRecebimento, getModeloSimulado, getChamadaAtiva, getRespostaEnvio, getSimuladorAtivo, setCaminhoReplay, setConfigRecebimento, setModeloSimulado, setRespostaEnvio, } from './runtime.js';
 const PORTA_PADRAO = 8777;
 /**
  * Painel de controle do simulador (HTTP em 127.0.0.1). SINGLETON e independente
@@ -101,6 +101,7 @@ export class SimulatorControlServer {
                     receber: getConfigRecebimento(),
                     replay: getCaminhoReplay(),
                     ramaisProgramados: getRamalOverrides().size,
+                    chamada: getChamadaAtiva(),
                 });
                 return;
             case '/enviar-config': {
@@ -214,6 +215,17 @@ export class SimulatorControlServer {
                     const disparado = flag('disparado', true);
                     sim.simularAlarme(zona, disparado);
                     return { cenario: 'alarme', zona, disparado };
+                });
+                return;
+            case '/discar':
+                comSimulador((sim) => {
+                    const origem = inteiro('origem', 201);
+                    const acao = url.searchParams.get('acao') ?? '';
+                    const alvo = inteiro('alvo', 200);
+                    const fechRaw = inteiro('fech', 1);
+                    const fech = (fechRaw === 2 ? 2 : fechRaw === 3 ? 3 : 1);
+                    const r = sim.simularDiscagem(origem, acao, alvo, fech);
+                    return { cenario: 'discar', origem, acao, alvo, ...r };
                 });
                 return;
             default:

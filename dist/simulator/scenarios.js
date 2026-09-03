@@ -84,46 +84,77 @@ function frameDiscagem(opts) {
  *                    `false` = não atendida (só toca e cai).
  * @param duracaoSeg  atendida: tempo de conversa; não atendida: tempo tocando.
  */
+const LIG_VIA = 1;
+const LIG_FUNCAO = FuncaoPABX.FUNC_INTERNA;
+/** Quadro "destino tocando, chamado por origem". */
+export function frameLigacaoToca(origemFixo, destinoFixo) {
+    return frameRamalTdi({
+        status: RamalStatus.RML_RINGANDO,
+        ramalFixo: destinoFixo,
+        ramalFixoA: origemFixo,
+        via: LIG_VIA,
+        funcao: LIG_FUNCAO,
+    });
+}
+/** Quadro "destino em conversa com origem" (chamada atendida). */
+export function frameLigacaoConversa(origemFixo, destinoFixo) {
+    return frameRamalTdi({
+        status: RamalStatus.RML_CONV_INT,
+        ramalFixo: destinoFixo,
+        ramalFixoA: origemFixo,
+        via: LIG_VIA,
+        funcao: LIG_FUNCAO,
+    });
+}
+/** Quadro "destino desocupado" (chamada encerrada). */
+export function frameLigacaoDesliga(destinoFixo) {
+    return frameRamalTdi({
+        status: RamalStatus.RML_DESOCUPADO,
+        ramalFixo: destinoFixo,
+        ramalFixoA: null,
+        via: RAMAL_NENHUM,
+        funcao: LIG_FUNCAO,
+    });
+}
 export function cenarioLigacao(origemFixo = 201, destinoFixo = 204, atende = true, duracaoSeg = 5) {
-    const via = 1;
     const dur = Math.max(1, Math.round(duracaoSeg)) * 1000;
-    const funcao = FuncaoPABX.FUNC_INTERNA;
     const toca = {
         emMs: 0,
-        frame: frameRamalTdi({
-            status: RamalStatus.RML_RINGANDO,
-            ramalFixo: destinoFixo,
-            ramalFixoA: origemFixo,
-            via,
-            funcao,
-        }),
+        frame: frameLigacaoToca(origemFixo, destinoFixo),
     };
     const desliga = (emMs) => ({
         emMs,
-        frame: frameRamalTdi({
-            status: RamalStatus.RML_DESOCUPADO,
-            ramalFixo: destinoFixo,
-            ramalFixoA: null,
-            via: RAMAL_NENHUM,
-            funcao,
-        }),
+        frame: frameLigacaoDesliga(destinoFixo),
     });
     if (!atende) {
         return [toca, desliga(dur)];
     }
     return [
         toca,
+        { emMs: 1200, frame: frameLigacaoConversa(origemFixo, destinoFixo) },
+        desliga(1200 + dur),
+    ];
+}
+/**
+ * Acionamento de fechadura durante uma chamada com o porteiro (o morador
+ * disca `*1` / `*2` / `*3`). Um quadro INFO_DISCAGEM_TDI com FUNC_PORTEIRO,
+ * como o acesso pelo porteiro; `fechadura` (1 = fech.1, 2 = fech.2, 3 = ambas)
+ * vai no byte de sub-estado.
+ *
+ * NOTA: o byte de sub-estado por fechadura é um palpite — confirmar com um
+ * `serial.log` real de `*1`/`*2`/`*3`.
+ */
+export function cenarioAcionamentoFechadura(porteiroFixo = 200, ramalFixo = 205, fechadura = 1) {
+    return [
         {
-            emMs: 1200,
-            frame: frameRamalTdi({
-                status: RamalStatus.RML_CONV_INT,
-                ramalFixo: destinoFixo,
-                ramalFixoA: origemFixo,
-                via,
-                funcao,
+            emMs: 0,
+            frame: frameDiscagem({
+                funcao: FuncaoPABX.FUNC_PORTEIRO,
+                ramalFixo: porteiroFixo,
+                ramalFixoA: ramalFixo,
+                subEstadoByte: fechadura & 0xff,
             }),
         },
-        desliga(1200 + dur),
     ];
 }
 /**

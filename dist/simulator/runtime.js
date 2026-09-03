@@ -84,6 +84,20 @@ export function setConfigRecebimento(patch) {
 }
 let simuladorAtivo = null;
 let acaoQueda = null;
+let chamadaAtiva = null;
+export function getChamadaAtiva() {
+    return chamadaAtiva;
+}
+export function setChamadaAtiva(c) {
+    chamadaAtiva = c;
+    if (c) {
+        logger.info(`[SIM][DISCAGEM] chamada ${c.origem} -> ${c.alvo} ` +
+            `(${c.tipo}, ${c.estado})`);
+    }
+    else {
+        logger.info('[SIM][DISCAGEM] chamada encerrada');
+    }
+}
 /** Registrado pelo transporte simulado enquanto está aberto. */
 export function registrarSimuladorAtivo(sim, queda) {
     simuladorAtivo = sim;

@@ -127,12 +127,35 @@ nada.
 | **Acesso pelo porteiro** | porteiro, ramal → evento `ACESSO_PORTEIRO` + Histórico de Acesso. | `/acesso?porteiro=200&ramal=205` |
 | **Acesso por senha** | ramal → acesso liberado por senha. | `/acesso-senha?ramal=205` |
 | **Alerta / Alarme** | zona/ramal → `Alerta ativado/desativado`, `Alarme disparado/normalizado`. Vira evento no Histórico de Eventos. | `/alerta?zona=205&ativado=1` · `/alarme?zona=205&disparado=1` |
+| **Discagem** | Sessão imersiva: o ramal *Origem* está no telefone/interfone e disca uma ação (ver abaixo). Um selo mostra o estado da chamada. | `/discar?origem=201&acao=...` |
 | **Queda de conexão** | Emite `error`/`close` — exercita a reconexão automática do CTI2. | `/drop` |
 | **Programações** | pré-configura o próximo *Receber* e a resposta do *Enviar* (ver abaixo). | `/receber-config` · `/enviar-config` |
 
 > **Ligação só entra no Histórico de Chamadas se origem E destino forem ramais
 > que existem no cadastro** (registrados por um *Receber*). Número desconhecido
 > vira "linha externa" e é descartado.
+
+### Card Discagem
+
+| Ação | Código real | Efeito |
+|---|---|---|
+| Ligar para ramal | disca o nº | Toca → botões **Atender** / **Não atender**; depois de atender, **Desligar**. |
+| Ligar para porteiro | disca o nº do porteiro | Entra "em conversa com o porteiro" → habilita as fechaduras. |
+| Abrir fechadura 1 / 2 / ambas | `*1` / `*2` / `*3` (em conversa com o porteiro) | `INFO_DISCAGEM_TDI` `FUNC_PORTEIRO` → evento `ACESSO_PORTEIRO`. |
+| Alerta ativar / desativar | `*190` / `*191` | igual ao card Alerta/Alarme, mas "discado" pela origem. |
+| Alarme disparar / normalizar | `*193` / `*192` | igual ao card Alerta/Alarme. |
+
+```bash
+curl "http://127.0.0.1:8777/discar?origem=201&acao=ligar_ramal&alvo=204"
+curl "http://127.0.0.1:8777/discar?origem=201&acao=atender"
+curl "http://127.0.0.1:8777/discar?origem=201&acao=desligar"
+curl "http://127.0.0.1:8777/discar?origem=205&acao=ligar_porteiro&alvo=200"
+curl "http://127.0.0.1:8777/discar?origem=205&acao=fechadura&fech=3"
+curl "http://127.0.0.1:8777/discar?origem=207&acao=alarme_on"
+```
+
+> O byte que indica **qual fechadura** (`*1`/`*2`/`*3`) é um palpite — vai ser
+> confirmado com um `serial.log` real (ver *Deixar o simulador mais imersivo*).
 
 **Autoplay** (sem clicar em nada):
 ```bash

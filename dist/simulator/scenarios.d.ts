@@ -6,18 +6,23 @@ export interface PassoCenario {
     emMs: number;
     frame: number[];
 }
-/**
- * Ligação interna: toca -> (atende) -> desliga. Gera um registro no Histórico
- * de Chamadas e acende/apaga um enlace.
- *
- * IMPORTANTE: `origemFixo` e `destinoFixo` precisam ser ramais que EXISTEM no
- * cadastro — senão o `ChamadaService` trata como "linha externa" e não grava.
- *
- * @param atende      `true` = chamada atendida (com duração de conversa);
- *                    `false` = não atendida (só toca e cai).
- * @param duracaoSeg  atendida: tempo de conversa; não atendida: tempo tocando.
- */
+/** Quadro "destino tocando, chamado por origem". */
+export declare function frameLigacaoToca(origemFixo: number, destinoFixo: number): number[];
+/** Quadro "destino em conversa com origem" (chamada atendida). */
+export declare function frameLigacaoConversa(origemFixo: number, destinoFixo: number): number[];
+/** Quadro "destino desocupado" (chamada encerrada). */
+export declare function frameLigacaoDesliga(destinoFixo: number): number[];
 export declare function cenarioLigacao(origemFixo?: number, destinoFixo?: number, atende?: boolean, duracaoSeg?: number): PassoCenario[];
+/**
+ * Acionamento de fechadura durante uma chamada com o porteiro (o morador
+ * disca `*1` / `*2` / `*3`). Um quadro INFO_DISCAGEM_TDI com FUNC_PORTEIRO,
+ * como o acesso pelo porteiro; `fechadura` (1 = fech.1, 2 = fech.2, 3 = ambas)
+ * vai no byte de sub-estado.
+ *
+ * NOTA: o byte de sub-estado por fechadura é um palpite — confirmar com um
+ * `serial.log` real de `*1`/`*2`/`*3`.
+ */
+export declare function cenarioAcionamentoFechadura(porteiroFixo?: number, ramalFixo?: number, fechadura?: 1 | 2 | 3): PassoCenario[];
 /**
  * Acesso liberado pelo porteiro — um único quadro INFO_DISCAGEM_TDI. Gera um
  * evento ACESSO_PORTEIRO e alimenta o Histórico de Acesso.

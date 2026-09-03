@@ -22,6 +22,14 @@ export interface ConfigRecebimento {
 }
 export declare function getConfigRecebimento(): ConfigRecebimento;
 export declare function setConfigRecebimento(patch: Partial<ConfigRecebimento>): void;
+export interface ChamadaAtiva {
+    origem: number;
+    alvo: number;
+    tipo: 'ramal' | 'porteiro';
+    estado: 'tocando' | 'conversa';
+}
+export declare function getChamadaAtiva(): ChamadaAtiva | null;
+export declare function setChamadaAtiva(c: ChamadaAtiva | null): void;
 /** Registrado pelo transporte simulado enquanto está aberto. */
 export declare function registrarSimuladorAtivo(sim: CentralSimulator | null, queda: (() => void) | null): void;
 export declare function getSimuladorAtivo(): CentralSimulator | null;
