@@ -1,210 +1,338 @@
 # pabx-hdl-simulator
 
-Simulador **em processo** da central PABX HDL. Implementa o transporte serial
-do CTI2 e injeta os pacotes que a central enviaria (ligações, acessos,
-alertas/alarmes, envio e recebimento de programações), com um **painel de
-controle HTTP** para disparar os cenários à mão. Serve para rodar e testar o
-CTI2 sem hardware físico.
+Simulador **em processo** da central telefônica PABX HDL. Faz o papel da central
+física: implementa o transporte serial que o CTI2 usa e devolve os mesmos
+pacotes que uma HDL de verdade enviaria — handshake, relógio, ligações,
+acessos de porteiro, alertas/alarmes e o envio/recebimento de programações.
+Vem com um **painel de controle no navegador** para você disparar cada cenário
+clicando num botão.
 
-Repositório **standalone**: o protocolo HDL (enums de comandos/programação/
-função/ramal/resposta + montagem/validação de frame + CRC) está vendorizado
-em `src/protocol/`; a interface `SerialTransport` e o logger são próprios.
-Sem dependência de `electron` nem do código do CTI2.
+Serve para **rodar e testar o CTI2 sem hardware** — sem cabo serial, sem
+central emprestada, sem esperar.
 
-- `npm run build` → `dist/`  ·  `npm test` → 46 testes  ·  `npm run typecheck`
-
-## Integração no CTI2
-
-O CTI2 consome só o pacote; a "cola" fica de um lado só.
-
-1. **Dependência de desenvolvimento** no `package.json` do CTI2:
-   ```jsonc
-   "devDependencies": {
-     "pabx-hdl-simulator": "file:../pabx-hdl-simulator"   // dev local
-     // ou: "github:<org>/pabx-hdl-simulator#<tag>"
-   }
-   ```
-2. **`createTransport`** (caso `'simulator'`), import dinâmico para não
-   entrar no bundle de produção:
-   ```ts
-   case 'simulator': {
-     const { SimulatedSerialTransport } = await import('pabx-hdl-simulator');
-     return new SimulatedSerialTransport(params);
-   }
-   ```
-3. **`SerialService`** inicia o painel uma vez (singleton que sobrevive a
-   desconexões):
-   ```ts
-   const { SimulatorControlServer } = await import('pabx-hdl-simulator');
-   SimulatorControlServer.iniciar({ onConectar, onDesconectar });
-   ```
-4. `resolveTransportMode` (env `CENTRIX_TRANSPORT` / `--sim` / arquivo
-   `USAR_SIMULADOR`), o log de boot em `main.ts` e o script `dev:sim` são
-   ~10 linhas que **permanecem no CTI2**.
-
-O texto abaixo é o guia de uso a partir do CTI2.
+Repositório **independente**: o protocolo HDL (enums de comando/programação +
+montagem/validação de frame + CRC) está copiado em `src/protocol/`, a interface
+`SerialTransport` e o logger são próprios. Não depende de `electron` nem do
+código do CTI2.
 
 ---
 
-# Central simulada (`CENTRIX_TRANSPORT=sim`)
+## Passo a passo — primeira vez
 
-Roda o CTI2 sem central física. O `SimulatedSerialTransport` implementa o mesmo
-contrato `SerialTransport` que a porta real, então `SerialConnection`,
-`PacketLengthParser` e todos os handlers funcionam sem saber que a "serial" é
-falsa.
+Pré-requisito: o repositório do CTI2 e este repositório **na mesma pasta**
+(irmãos):
 
-## Como ligar
-
-Qualquer um destes liga o simulador (checados nesta ordem):
-
-1. **Arquivo-marcador (à prova de falha, recomendado no Windows).** Crie um
-   arquivo vazio chamado `USAR_SIMULADOR` na raiz do projeto e rode `npm run dev`
-   normal. Não depende de variável de ambiente chegar ao Electron.
-   ```bash
-   # na raiz do projeto:
-   ni USAR_SIMULADOR        # PowerShell
-   touch USAR_SIMULADOR     # bash
-   ```
-2. **`.env`.** Adicione `CENTRIX_TRANSPORT=sim` ao arquivo `.env` (o `main.ts`
-   carrega no boot). Depois `npm run dev`.
-3. **Variável de ambiente / script.** `npm run dev:sim`, ou no PowerShell
-   `$env:CENTRIX_TRANSPORT='sim'; npm run dev`.
-
-### Desligar o simulador
-
-`CENTRIX_TRANSPORT=real` **vence tudo** (o `--sim` e o arquivo-marcador):
-
-```bash
-# PowerShell, na mesma janela:
-$env:CENTRIX_TRANSPORT='real'; npm run dev
+```
+CTI/
+├─ CTI2/                  ← o app
+└─ pabx-hdl-simulator/    ← este repositório
 ```
 
-Só apagar o `USAR_SIMULADOR` e comentar o `.env` **não basta se a variável
-ficou grudada no terminal** — foi o que aconteceu se você rodou
-`$env:CENTRIX_TRANSPORT='sim'` antes, ou se está rodando `npm run dev:sim`. Uma
-variável de ambiente do processo vence o `.env`. Soluções:
+1. **Compile o simulador:**
+   ```bash
+   cd pabx-hdl-simulator
+   npm install
+   npm run build          # gera dist/
+   ```
 
-- **feche essa janela do terminal e abra outra**, aí `npm run dev`; ou
-- `Remove-Item Env:\CENTRIX_TRANSPORT` e `npm run dev`; ou
-- `$env:CENTRIX_TRANSPORT='real'` (override forte, acima).
+2. **Instale a dependência no CTI2** (só uma vez, e sempre que o simulador
+   mudar — `file:` no yarn/npm é cópia, não link):
+   ```bash
+   cd ../CTI2
+   yarn install           # o package.json já aponta "pabx-hdl-simulator": "file:../pabx-hdl-simulator"
+   ```
 
-Confirme no log: `[CTI][APPLICATION] Transporte serial: REAL`.
+3. **Ligue o modo simulador.** Crie um arquivo vazio chamado `USAR_SIMULADOR`
+   na raiz do CTI2 (é o jeito mais à prova de falha):
+   ```bash
+   # dentro de CTI2/
+   ni USAR_SIMULADOR       # PowerShell
+   touch USAR_SIMULADOR    # bash
+   ```
 
-Confirme no log, ao subir o app, a linha:
-`[TRANSPORT] Modo resolvido: SIMULATOR` seguida de
-`*** CENTRAL SIMULADA ATIVA ***`. Se aparecer `REAL`, nenhum dos sinais acima
-pegou.
+4. **Suba o app:**
+   ```bash
+   yarn dev
+   ```
 
-Na tela "Conectar PABX" clique em conectar normalmente (a porta COM escolhida é
-ignorada). A central simulada responde ao handshake (`CONECTA_PABX` →
-`RES_IDENTIF`, `INFO_INSTALACAO` → `INFO_INSTALA_TDI`), confirma sincronização de
-data/hora e emite um quadro de relógio a cada 10s para o watchdog do CTI ficar
-satisfeito.
+5. **Confirme no log do terminal** (processo Electron):
+   ```
+   [CTI][APPLICATION] Transporte serial: SIMULATOR — CENTRAL SIMULADA ...
+   [TRANSPORT] Modo resolvido: SIMULATOR
+   [SIM][CTRL] Painel de controle do simulador: http://127.0.0.1:8777/
+   ```
+   Se disser `REAL`, o modo simulador não pegou — veja *Solução de problemas*.
 
-## Disparar eventos — telinha com botões
+6. **O painel abre sozinho no navegador** (`http://127.0.0.1:8777/`). Se não
+   abrir, acesse a URL à mão.
 
-O painel (`http://127.0.0.1:8777/`, porta em `CENTRIX_SIM_PORT`) é um **singleton
-iniciado por `SerialService` no boot** e **sobrevive a desconexões** — não morre
-mais quando você clica em "Desconectar". Abre sozinho no navegador.
+7. **Na tela "Conectar PABX" do app, clique em Conectar** normalmente. A porta
+   COM escolhida é ignorada; a central simulada responde ao handshake e passa a
+   mandar o relógio a cada 10s.
 
-- **Central emulada**: escolhe o modelo (todo o enum `CentraisHDL`), botões
-  **Conectar / Desconectar** (handshake completo — é o que aplica o modelo novo
-  e repopula "Informações do PABX") e **Salvar modelo**. O modelo só vale no
-  próximo *Conectar*. Também via env `CENTRIX_SIM_MODELO=HDL32p`.
-- Um selo mostra se a central está **conectada** (verde) ou **desconectada**
-  (vermelho). Cenários enquanto desconectado devolvem `409`, não travam.
+8. **Clique em "Receber programações" no painel** (card *Programações*). Isso
+   registra os ramais no banco do CTI2 — **sem esse passo, ligação entre ramais
+   não entra no Histórico de Chamadas** (o CTI2 trata número desconhecido como
+   linha externa e descarta).
 
-| Cartão | O que faz |
-|--------|-----------|
-| **Ligação** — origem, destino, duração(s), *Atendida* | Toca → (atende) → desliga. Atendida grava com duração; desmarcada grava como **não atendida**. |
-| **Acesso pelo porteiro** — porteiro, ramal | Evento `ACESSO_PORTEIRO` + Histórico de Acesso. |
-| **Alerta / Alarme** — zona/ramal | `Alerta ativado/desativado` e `Alarme disparado/normalizado` (quadro `INFO_DISCAGEM_TDI` com `FUNC_ALERTA`/`FUNC_ALARME`). Vira evento no Histórico de Eventos. |
-| **Queda de conexão** | Emite `error`/`close`, exercitando a reconexão automática. |
+Pronto. Agora é só clicar nos botões do painel para simular ligações, acessos,
+alarmes, etc.
+
+---
+
+## Ligar e desligar
+
+**Ligar o simulador** — qualquer um destes, checados nesta ordem:
+
+| Forma | Como |
+|---|---|
+| Arquivo-marcador *(recomendado)* | `USAR_SIMULADOR` vazio na raiz do CTI2 + `yarn dev` |
+| `.env` | linha `CENTRIX_TRANSPORT=sim` no `.env` do CTI2 + `yarn dev` |
+| Script | `yarn dev:sim` |
+| Flag | `yarn dev -- --sim` |
+| Env na hora | `$env:CENTRIX_TRANSPORT='sim'; yarn dev` (PowerShell) |
+
+**Desligar** — `CENTRIX_TRANSPORT=real` **vence tudo** (ignora `--sim` e o
+arquivo-marcador):
+
+```powershell
+$env:CENTRIX_TRANSPORT='real'; yarn dev
+```
+
+⚠️ Só apagar o `USAR_SIMULADOR` **não basta se a variável ficou grudada no
+terminal** (você rodou `dev:sim` ou setou `$env:CENTRIX_TRANSPORT` antes).
+Nesse caso: feche a janela do terminal e abra outra, ou
+`Remove-Item Env:\CENTRIX_TRANSPORT`, ou use o override `='real'` acima.
+Confirme no log: `Transporte serial: REAL`.
+
+Para o painel **não** abrir sozinho no navegador: `CENTRIX_SIM_OPEN_PANEL=0`.
+
+---
+
+## O painel de controle
+
+`http://127.0.0.1:8777/` (porta em `CENTRIX_SIM_PORT`). É um **singleton** que o
+`SerialService` sobe no boot e **sobrevive a desconexões** — não morre quando
+você clica em "Desconectar".
+
+Um selo mostra se a central está **conectada** (verde) ou **desconectada**
+(vermelho). Cenário disparado enquanto desconectado devolve `409` e não trava
+nada.
+
+| Card | O que faz | Comando equivalente |
+|---|---|---|
+| **Central emulada** | Escolhe o modelo (todo o enum `CentraisHDL`), **Conectar / Desconectar** (handshake completo — é o que aplica o modelo e repopula "Informações do PABX"), **Salvar modelo** (só vale no próximo *Conectar*). | `/config?modelo=HDL32p` · `/conectar` · `/desconectar` |
+| **Ligação** | origem, destino, duração(s), *Atendida*. Toca → (atende) → desliga. Atendida grava com duração; desmarcada grava como **não atendida**. | `/ligacao?origem=201&destino=204&atende=1&duracao=8` |
+| **Acesso pelo porteiro** | porteiro, ramal → evento `ACESSO_PORTEIRO` + Histórico de Acesso. | `/acesso?porteiro=200&ramal=205` |
+| **Acesso por senha** | ramal → acesso liberado por senha. | `/acesso-senha?ramal=205` |
+| **Alerta / Alarme** | zona/ramal → `Alerta ativado/desativado`, `Alarme disparado/normalizado`. Vira evento no Histórico de Eventos. | `/alerta?zona=205&ativado=1` · `/alarme?zona=205&disparado=1` |
+| **Queda de conexão** | Emite `error`/`close` — exercita a reconexão automática do CTI2. | `/drop` |
+| **Programações** | pré-configura o próximo *Receber* e a resposta do *Enviar* (ver abaixo). | `/receber-config` · `/enviar-config` |
 
 > **Ligação só entra no Histórico de Chamadas se origem E destino forem ramais
-> que EXISTEM no cadastro.** Número que o CTI não conhece é tratado como linha
-> externa e descartado (`[CHAMADA_SERVICE] ... envolve linha externa - não gravada`).
+> que existem no cadastro** (registrados por um *Receber*). Número desconhecido
+> vira "linha externa" e é descartado.
 
-Para não abrir o navegador automaticamente: `CENTRIX_SIM_OPEN_PANEL=0`.
-As mesmas ações por linha de comando:
-
+**Autoplay** (sem clicar em nada):
 ```bash
-curl "http://127.0.0.1:8777/ligacao?origem=201&destino=204&atende=1&duracao=8"
-curl "http://127.0.0.1:8777/ligacao?origem=201&destino=204&atende=0"   # não atendida
-curl "http://127.0.0.1:8777/acesso?porteiro=200&ramal=205"
-curl "http://127.0.0.1:8777/alerta?zona=205&ativado=1"
-curl "http://127.0.0.1:8777/alarme?zona=205&disparado=1"
-curl "http://127.0.0.1:8777/drop"
+CENTRIX_SIM_AUTOPLAY=ligacao,acesso    # repete em loop
+CENTRIX_SIM_AUTOPLAY_MS=25000          # intervalo (padrão 25s)
 ```
 
-## Receber / Enviar programações (card "Programações" do painel)
+---
 
-**Receber** (`SOL_PROGRAMACAO`): a central responde `RES_OK` e então um dump —
-N `PROG_RML_CATEGORIA` (ramais primeiro, senão `saveReceived` quebra) +
-`PROG_CONFIGURACAO` + `PROG_FIM`. Configurável no painel (ou
-`/receber-config?ramais=16&inicial=200&porteiros=2&troncos=4&senha=1234`):
+## Receber / Enviar programações
+
+### Receber (`SOL_PROGRAMACAO`)
+
+O **app** é quem inicia; o painel só **pré-configura** o próximo dump. A central
+responde `RES_OK` e manda: N × `PROG_RML_CATEGORIA` (ramais primeiro) +
+`PROG_CONFIGURACAO` + `PROG_FIM`.
+
+Config no painel ou `/receber-config?ramais=16&inicial=200&porteiros=2&troncos=4&senha=1234`:
 
 | Campo | O que faz |
-|-------|-----------|
+|---|---|
 | nº de ramais | quantos `PROG_RML_CATEGORIA` (1–250) |
 | ramal inicial | `numeroFixo` do primeiro (flexível = fixo) |
 | porteiros | os últimos N ramais viram `porteiro_fechadura` |
 | troncos | quantidade de troncos no `PROG_CONFIGURACAO` |
 
-O app é quem inicia o `SOL_PROGRAMACAO` — o painel só **pré-configura** o
-próximo. **Faça um "Receber" logo após conectar**: é o que registra os ramais
-no banco (sem isso, ligação entre ramais não entra no histórico).
+### Enviar (`EFE_PROGRAMACAO` / `EFE_PROG_RML`)
 
-**Enviar** (`EFE_PROGRAMACAO` / `EFE_PROG_RML`): resposta configurável no painel
-(ou `/enviar-config?resposta=ok|nok|timeout`):
+Resposta configurável no painel ou `/enviar-config?resposta=ok|nok|timeout`:
 
-- `ok` — `RES_OK` a tudo (padrão). **Além disso, a central simulada GUARDA o
-  efeito** dos comandos que sabe decodificar — número flexível, hotline, desvio
-  e tipo de toque de ramal — e devolve esses valores no próximo *Receber*. Aí o
-  **enviar → confirmar** fecha (não fica "pendente"). Ramal editado que estava
-  fora da faixa do dump é incluído automaticamente. Botão **"Resetar estado
-  programado"** (ou `/receber-config?resetestado=1`) zera isso. Os demais campos
-  ainda ficam "pendente" na verificação.
-- `nok` — `RES_NOK` a tudo: exercita o fluxo de pendência/erro do app.
-- `timeout` — não responde: exercita o retry/timeout do `Command`.
+- **`ok`** *(padrão)* — `RES_OK` a tudo. Além disso a central simulada **guarda
+  o efeito** dos comandos que sabe decodificar (número flexível, hotline,
+  desvio, tipo de toque) e devolve esses valores no próximo *Receber* — aí o
+  fluxo **enviar → confirmar** fecha, não fica "pendente". Botão **"Resetar
+  estado programado"** (`/receber-config?resetestado=1`) zera isso.
+- **`nok`** — `RES_NOK` a tudo: exercita o fluxo de erro/pendência do app.
+- **`timeout`** — não responde: exercita o retry/timeout do `Command`.
 
-> Não é o retrato fiel da central (categorias, rotas, interfones ficam nos
-> defaults). Para fidelidade total, replay de um `serial.log` real no lugar de
-> `cenarioReceberProgramacoes()` em `scenarios.ts`.
+### Replay de um `serial.log` real
 
-## "A porta foi recusada" / `ERR_CONNECTION_REFUSED` no painel
+Para fidelidade total num *Receber*, aponte um `serial.log` capturado de uma
+central de verdade (campo no painel ou
+`/receber-config?replay=C:/caminho/serial.log`). O simulador extrai os frames
+`PRODUTO ->` do arquivo e reenvia exatamente eles no lugar do dump sintético.
+Ver `src/simulator/replay.ts`.
 
-Os dois sintomas têm a mesma causa: **o app não está em modo simulador**, então
-o `SimulatedSerialTransport` nunca é criado e o painel (`:8777`) nunca sobe.
+---
 
-1. No log do processo principal, procure `[TRANSPORT] Modo resolvido: ...`. Se
-   disser `REAL`, é isso.
-2. Use o **arquivo-marcador**: crie `USAR_SIMULADOR` (vazio) na raiz do projeto,
-   **feche o app inteiro** e rode `npm run dev` de novo. Recarregar só o Vite
-   não reinicia o Electron — o processo principal fica com a decisão antiga.
-3. Só então abra `http://127.0.0.1:8777/` (ou espere abrir sozinho).
+## Como funciona por dentro
 
-## Autoplay (sem interação)
-
-```bash
-CENTRIX_SIM_AUTOPLAY=ligacao,acesso   # cenários repetidos em loop
-CENTRIX_SIM_AUTOPLAY_MS=25000         # intervalo (padrão 25s)
 ```
+ CTI2 (SerialConnection)                     pabx-hdl-simulator
+ ─────────────────────────                   ──────────────────
+ createTransport(params,'simulator')  ─────► new SimulatedSerialTransport(params)
+        │                                            │
+        │  .pipe(PacketLengthParser)  ◄────────────  rx: PassThrough  (a central "fala" por aqui)
+        │  .write(bytesDoCTI)         ─────────────►  CentralSimulator.onBytesFromCti()
+        │  .on('close'|'error')       ◄────────────  simulateDrop()  (rota /drop)
+```
+
+1. **`SimulatedSerialTransport`** (`src/simulated-serial-transport.ts`) — a casca
+   que implementa `SerialTransport`. Não tem lógica de protocolo: `pipe()`
+   devolve um `PassThrough` por onde a central emite bytes; `write()` entrega os
+   bytes do CTI2 ao `CentralSimulator`; `close`/`error` são emitidos de verdade.
+   O CTI2 não sabe que a "serial" é falsa.
+
+2. **`CentralSimulator`** (`src/simulator/central-simulator.ts`) — o cérebro.
+   Valida e faz o parse do frame recebido (`0xFA <len> <cmd> <dados> <crc>`) e,
+   pelo `cmd`, decide a resposta:
+   - `CONECTA_PABX` → frame de identificação (usa o modelo simulado);
+   - `INFO_INSTALACAO` → ecoa os sentinelas que o CTI2 mandou;
+   - `EFE_PROGRAMACAO` / `EFE_PROG_RML` → `RES_OK`/`NOK`/timeout + registra o
+     efeito (`src/simulator/prog-estado.ts`);
+   - `SOL_PROGRAMACAO` → `RES_OK` + o dump de programações
+     (`src/simulator/scenarios.ts`, ou replay).
+   Também expõe `simularLigacao`, `simularAcessoPorteiro`, `simularAlerta`, etc.,
+   chamados pelo painel.
+
+3. **`scenarios.ts`** — monta os quadros `INFO_RAMAL_TDI` / `INFO_DISCAGEM_TDI`
+   dos cenários com os **offsets exatos** que os handlers do CTI2 leem.
+   `buildFrame()` (`src/protocol/frame.ts`) calcula LEN + CRC igual ao firmware.
+
+4. **`runtime.ts`** — estado global do simulador (modelo, resposta do envio,
+   config de recebimento, simulador ativo). O painel e o CTI2 leem/escrevem
+   aqui.
+
+5. **`control-server.ts`** — servidor HTTP 127.0.0.1:8777, roteia as ações do
+   painel para o `CentralSimulator` ativo. `control-panel.html.ts` é a página
+   inteira (HTML/CSS/JS inline, zero dependência).
+
+---
+
+## Integração no CTI2
+
+A "cola" fica **só do lado do CTI2** (~10 linhas), commitada em
+`feature/simulador-transport`:
+
+1. **Dependência** no `package.json` do CTI2:
+   ```jsonc
+   "dependencies": {
+     "pabx-hdl-simulator": "file:../pabx-hdl-simulator"
+     // ou, depois de publicar: "github:<org>/pabx-hdl-simulator#<tag>"
+   }
+   ```
+   (é `dependencies`, não `devDependencies`: o pacote é pequeno, sem deps
+   próprias, e um `import` estático dele precisa existir também nos builds que
+   rodam `--omit=dev`. Em produção o código fica inerte porque
+   `resolveTransportMode()` devolve `real`.)
+
+2. **`createTransport`** (`src/electron/connection/serial/transport/create-transport.ts`):
+   ```ts
+   import { SimulatedSerialTransport } from 'pabx-hdl-simulator';
+   // ...
+   case 'simulator':
+     return new SimulatedSerialTransport(params);
+   ```
+
+3. **`SerialService`** sobe o painel uma vez, no `register()`:
+   ```ts
+   import { SimulatorControlServer } from 'pabx-hdl-simulator';
+   // iniciarSimulador(): if (resolveTransportMode() === 'simulator') { ... }
+   SimulatorControlServer.iniciar({ onConectar, onDesconectar });
+   ```
+
+4. `resolveTransportMode` (env `CENTRIX_TRANSPORT` / `--sim` / arquivo
+   `USAR_SIMULADOR`), o log de boot em `main.ts` e o script `dev:sim`
+   **permanecem no CTI2**.
+
+---
+
+## Deixar o simulador mais imersivo com logs reais
+
+O simulador de hoje é funcional mas não é o retrato fiel de uma central (as
+categorias, rotas e interfones ficam nos defaults). Para aproximar:
+
+1. Com a central **física** conectada no CTI2, faça **todo tipo de operação**:
+   receber programações, enviar cada tipo (número flexível, hotline, desvio,
+   categoria/porteiro, senha de fechadura, bloco, tempos, abertura de
+   apartamento, portaria/síndico/programador, troncos…), uma ligação, um
+   acesso, um alarme.
+2. Guarde o **`serial.log`** inteiro dessa sessão (fica em
+   `dist-electron/.../logs/` — o caminho aparece no log de boot). Cada linha tem
+   o sentido (`CTI ->` / `PRODUTO ->`) e os bytes em hexa.
+3. Manda o arquivo. Com ele dá para: (a) usar como **replay** direto; e (b)
+   extrair os frames `PRODUTO ->` reais por comando e embutir em
+   `central-simulator.ts` / `scenarios.ts`, para o dump sintético e as respostas
+   de `EFE_*` baterem byte a byte com o firmware.
+
+---
+
+## Solução de problemas
+
+**"A porta foi recusada" / `ERR_CONNECTION_REFUSED` no painel** — o app **não
+está em modo simulador**, então o `SimulatedSerialTransport` nunca é criado e o
+`:8777` nunca sobe.
+1. No log, procure `[TRANSPORT] Modo resolvido: ...`. Se disser `REAL`, é isso.
+2. Crie `USAR_SIMULADOR` (vazio) na raiz do CTI2, **feche o app inteiro** e
+   `yarn dev` de novo. Recarregar só o Vite não reinicia o Electron.
+3. Só então abra `http://127.0.0.1:8777/`.
+
+**Ligação não aparece no Histórico de Chamadas** — origem e/ou destino não são
+ramais cadastrados. Clique em **Receber programações** no painel primeiro.
+
+**"enviar → confirmar" fica pendente** — a resposta do envio está em `nok`/
+`timeout`, ou o campo alterado não é dos que o simulador decodifica (só número
+flexível, hotline, desvio, tipo de toque fecham sozinhos). Ponha em `ok` e
+clique em *Receber* de novo.
+
+---
 
 ## Estrutura
 
-| Arquivo | Papel |
-|---------|-------|
-| `simulated-serial-transport.ts` | Adapta a central virtual ao contrato `SerialTransport` (pipe/write/close/error). |
-| `simulator/central-simulator.ts` | O "cérebro": recebe os bytes do CTI e decide o que a central responde. |
-| `simulator/scenarios.ts` | Monta os quadros `INFO_RAMAL_TDI` / `INFO_DISCAGEM_TDI` dos cenários, com os offsets que os handlers reais leem. |
-| `simulator/control-server.ts` | Servidor HTTP local + abre o painel no navegador. |
-| `simulator/control-panel.html.ts` | A página da telinha (HTML/CSS/JS inline, sem dependências). |
+```
+src/
+├─ protocol/              vendorizado do CTI2 — não editar aqui
+│  ├─ crc.ts  frame.ts    montagem/validação de frame + CRC HDL
+│  └─ *.enum.ts           comandos, programação, função, ramal, resposta, centrais
+├─ transport.ts           interface SerialTransport
+├─ logger.ts              logger de console mínimo
+├─ simulated-serial-transport.ts
+├─ simulator/
+│  ├─ central-simulator.ts   o cérebro (recebe bytes, decide a resposta)
+│  ├─ scenarios.ts           monta os quadros dos cenários
+│  ├─ runtime.ts             estado global (modelo, config, ativo)
+│  ├─ prog-estado.ts         guarda o efeito dos EFE_* pro próximo Receber
+│  ├─ replay.ts              replay de serial.log real
+│  ├─ control-server.ts      HTTP 127.0.0.1:8777
+│  └─ control-panel.html.ts  a página do painel (inline)
+└─ index.ts               API pública do pacote
+```
 
-## Adicionando realismo
+---
 
-Os frames são montados com `buildFrame()` (`../protocol/frame.ts`), que calcula
-LEN + CRC igual ao firmware. Para reproduzir um fluxo real, pegue os frames
-`PRODUTO ->` de um `serial.log` capturado e devolva-os de `central-simulator.ts`
-(ex.: no `case ComandosPABX.SOL_PROGRAMACAO`, ainda um TODO — hoje só confirma
-com `RES_OK`).
+## Desenvolvimento
+
+```bash
+npm run build       # tsc -> dist/
+npm run typecheck   # tsc --noEmit
+npm test            # vitest (46 testes: crc, frame, prog-estado, replay, central-simulator)
+npm run test:watch
+```
+
+Depois de qualquer mudança aqui, rode `npm run build` e `yarn install` no CTI2
+(o `file:` copia, não linka).
