@@ -68,13 +68,15 @@ CTI/
    abrir, acesse a URL à mão.
 
 7. **Na tela "Conectar PABX" do app, clique em Conectar** normalmente. A porta
-   COM escolhida é ignorada; a central simulada responde ao handshake e passa a
-   mandar o relógio a cada 10s.
+   COM escolhida é ignorada; a central simulada responde ao handshake como uma
+   **HDL32p** real (é o modelo padrão) e passa a mandar o relógio + um heartbeat
+   a cada 10s.
 
-8. **Clique em "Receber programações" no painel** (card *Programações*). Isso
-   registra os ramais no banco do CTI2 — **sem esse passo, ligação entre ramais
-   não entra no Histórico de Chamadas** (o CTI2 trata número desconhecido como
-   linha externa e descarta).
+8. **Clique em "Receber programações" no painel** (card *Programações*). No
+   modelo padrão isso traz o **dump real capturado de uma HDL32p** (ver *Dump
+   real embutido* abaixo) e registra os ramais no banco do CTI2 — **sem esse
+   passo, ligação entre ramais não entra no Histórico de Chamadas** (o CTI2
+   trata número desconhecido como linha externa e descarta).
 
 Pronto. Agora é só clicar nos botões do painel para simular ligações, acessos,
 alarmes, etc.
@@ -194,12 +196,26 @@ Resposta configurável no painel ou `/enviar-config?resposta=ok|nok|timeout`:
 - **`nok`** — `RES_NOK` a tudo: exercita o fluxo de erro/pendência do app.
 - **`timeout`** — não responde: exercita o retry/timeout do `Command`.
 
-### Replay de um `serial.log` real
+### Dump real embutido (HDL32p)
 
-Para fidelidade total num *Receber*, aponte um `serial.log` capturado de uma
-central de verdade (campo no painel ou
-`/receber-config?replay=C:/caminho/serial.log`). O simulador extrai os frames
-`PRODUTO ->` do arquivo e reenvia exatamente eles no lugar do dump sintético.
+Quando o modelo simulado é **HDL32p** (o padrão) e **não há override pendente**
+de "Enviar", o *Receber* já responde com um **dump real capturado de uma HDL32p
+física** (`src/simulator/capturas-reais.ts`, 96 frames de `91 01` a `91 fe` —
+categorias, desvios, rotas, IP, agenda...). O handshake (`RES_IDENTIF`) e o
+heartbeat espontâneo de ~10s também são os bytes reais dessa central.
+
+É um retrato **estático**: assim que você envia uma alteração, o *Receber* volta
+ao dump sintético (que aplica o override e fecha o fluxo enviar → confirmar).
+Rode outro modelo (`/config?modelo=HDL256p`) para sempre usar o sintético.
+
+Para regenerar de uma captura nova:
+`node scripts/gerar-capturas-reais.mjs <CAPTURA-FASE-B.saida.md | serial.log>`.
+
+### Replay de um `serial.log` arbitrário
+
+Para replicar *outra* central, aponte um `serial.log` dela (campo no painel ou
+`/receber-config?replay=C:/caminho/serial.log`) — tem prioridade sobre o dump
+embutido. O simulador extrai os frames `PRODUTO ->` e reenvia exatamente eles.
 Ver `src/simulator/replay.ts`.
 
 ---
@@ -344,9 +360,12 @@ src/
 │  ├─ scenarios.ts           monta os quadros dos cenários
 │  ├─ runtime.ts             estado global (modelo, config, ativo)
 │  ├─ prog-estado.ts         guarda o efeito dos EFE_* pro próximo Receber
-│  ├─ replay.ts              replay de serial.log real
+│  ├─ capturas-reais.ts      frames reais da HDL32p (handshake, dump, heartbeat)
+│  ├─ replay.ts              replay de serial.log arbitrário
 │  ├─ control-server.ts      HTTP 127.0.0.1:8777
 │  └─ control-panel.html.ts  a página do painel (inline)
+├─ scripts/
+│  └─ gerar-capturas-reais.mjs   regenera capturas-reais.ts de uma captura
 └─ index.ts               API pública do pacote
 ```
 
@@ -357,7 +376,7 @@ src/
 ```bash
 npm run build       # tsc -> dist/
 npm run typecheck   # tsc --noEmit
-npm test            # vitest (46 testes: crc, frame, prog-estado, replay, central-simulator)
+npm test            # vitest (53 testes: crc, frame, prog-estado, replay, capturas-reais, central-simulator)
 npm run test:watch
 ```
 

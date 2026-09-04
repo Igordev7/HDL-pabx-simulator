@@ -68,4 +68,12 @@ export declare function ramaisDoDump(cfg: ConfigDump): RamalSimulado[];
  * defaults). Para fidelidade total, replay de um `serial.log` real — ver
  * SIMULADOR.md.
  */
+/**
+ * "Receber programações" a partir do dump REAL capturado de uma HDL32p física
+ * (`capturas-reais.ts`). É um retrato ESTÁTICO da central no momento da captura:
+ * não aplica os overrides de "Enviar". O chamador (central-simulator.ts) só
+ * escolhe este caminho quando o modelo é HDL32p e não há override pendente —
+ * caso contrário cai no dump sintético, que reflete as edições.
+ */
+export declare function cenarioReceberReal(): PassoCenario[];
 export declare function cenarioReceberProgramacoes(cfg?: ConfigDump): PassoCenario[];

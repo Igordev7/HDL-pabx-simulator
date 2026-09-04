@@ -53,6 +53,13 @@ export declare class CentralSimulator {
      * o handshake de instalação.
      */
     private frameIdentificacao;
+    /**
+     * Quadros que a central emite sozinha, periodicamente. Numa HDL32p real são
+     * dois: o relógio (INFO_DATAHORA) e um heartbeat de status
+     * (INFO_RAMAL_TDI_2 — o `fa 16 00 …` capturado). Nos outros modelos, só o
+     * relógio (não há captura do heartbeat deles).
+     */
+    private enviarAmbiente;
     private enviarDataHora;
     private responderEm;
     private configurarAutoplay;

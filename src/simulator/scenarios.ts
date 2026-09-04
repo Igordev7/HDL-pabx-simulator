@@ -4,6 +4,7 @@ import { RamalStatus } from '../protocol/ramal.enum.js';
 import { FuncaoPABX } from '../protocol/funcao.enum.js';
 import { ProgramacaoPABX } from '../protocol/programacao.enum.js';
 import { getRamalOverrides, RamalOverride } from './prog-estado.js';
+import { RECEBER_HDL32P } from './capturas-reais.js';
 
 /**
  * Um passo de cenário: um frame que a central simulada "fala" `emMs`
@@ -409,6 +410,21 @@ export function ramaisDoDump(cfg: ConfigDump): RamalSimulado[] {
  * defaults). Para fidelidade total, replay de um `serial.log` real — ver
  * SIMULADOR.md.
  */
+/**
+ * "Receber programações" a partir do dump REAL capturado de uma HDL32p física
+ * (`capturas-reais.ts`). É um retrato ESTÁTICO da central no momento da captura:
+ * não aplica os overrides de "Enviar". O chamador (central-simulator.ts) só
+ * escolhe este caminho quando o modelo é HDL32p e não há override pendente —
+ * caso contrário cai no dump sintético, que reflete as edições.
+ */
+export function cenarioReceberReal(): PassoCenario[] {
+  const passo = 30;
+  return RECEBER_HDL32P.map((frame, i) => ({
+    emMs: 200 + i * passo,
+    frame: [...frame],
+  }));
+}
+
 export function cenarioReceberProgramacoes(
   cfg: ConfigDump = CONFIG_DUMP_PADRAO
 ): PassoCenario[] {

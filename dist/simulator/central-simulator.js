@@ -1,8 +1,11 @@
 import { buildFrame, parseFrame, validateFrame, } from '../protocol/frame.js';
 import { ComandosPABX, getCommandNameFromEnum, } from '../protocol/comandos.enum.js';
 import { InfoRespostaPABX } from '../protocol/info-resposta.enum.js';
+import { CentraisHDL } from '../protocol/centrais.enum.js';
 import { logger } from '../logger.js';
-import { cenarioAcessoPorteiro, cenarioAcessoSenha, cenarioAcionamentoFechadura, cenarioAlarme, cenarioAlerta, cenarioLigacao, cenarioReceberProgramacoes, frameLigacaoConversa, frameLigacaoDesliga, frameLigacaoToca, } from './scenarios.js';
+import { cenarioAcessoPorteiro, cenarioAcessoSenha, cenarioAcionamentoFechadura, cenarioAlarme, cenarioAlerta, cenarioLigacao, cenarioReceberProgramacoes, cenarioReceberReal, frameLigacaoConversa, frameLigacaoDesliga, frameLigacaoToca, } from './scenarios.js';
+import { getRamalOverrides } from './prog-estado.js';
+import { RES_IDENTIF_HDL32P, STATUS_HEARTBEAT_HDL32P, } from './capturas-reais.js';
 import { getCaminhoReplay, getChamadaAtiva, getConfigRecebimento, getModeloSimulado, getRespostaEnvio, setChamadaAtiva, } from './runtime.js';
 import { cenarioReplayCaptura } from './replay.js';
 import { aplicarEfe } from './prog-estado.js';
@@ -35,8 +38,8 @@ export class CentralSimulator {
         // A central real está sempre "conversando": manda a capacidade de enlaces
         // e o relógio sem o CTI pedir. Isso mantém o watchdog do CTI satisfeito.
         this.push(buildFrame(ComandosPABX.INFO_ENLACES, [20]));
-        this.enviarDataHora();
-        this.clockTimer = setInterval(() => this.enviarDataHora(), AMBIENT_CLOCK_MS);
+        this.enviarAmbiente();
+        this.clockTimer = setInterval(() => this.enviarAmbiente(), AMBIENT_CLOCK_MS);
         this.configurarAutoplay();
         logger.info('[SIM][CENTRAL] Central simulada iniciada (relógio a cada ' +
             `${AMBIENT_CLOCK_MS / 1000}s).`);
@@ -208,12 +211,19 @@ export class CentralSimulator {
             }
             case ComandosPABX.SOL_PROGRAMACAO: {
                 this.responderEm(20, this.frameResposta(InfoRespostaPABX.RES_OK));
-                // 1º: replay de uma captura real, se configurada e legível.
-                // 2º (fallback): o dump sintético configurável pelo painel.
+                // 1º: replay de um serial.log apontado pelo painel.
+                // 2º: dump REAL embutido da HDL32p — só se o modelo for HDL32p e não
+                //     houver override pendente (o dump real é estático e não reflete
+                //     "Enviar"; com override, o sintético é quem aplica a edição).
+                // 3º: dump sintético configurável pelo painel.
                 const replay = getCaminhoReplay();
-                const passos = replay ? cenarioReplayCaptura(replay) : null;
-                if (passos) {
-                    this.executarCenario(passos, `receber (replay de ${replay})`);
+                const passosReplay = replay ? cenarioReplayCaptura(replay) : null;
+                if (passosReplay) {
+                    this.executarCenario(passosReplay, `receber (replay de ${replay})`);
+                }
+                else if (getModeloSimulado().byte === CentraisHDL.HDL32p &&
+                    getRamalOverrides().size === 0) {
+                    this.executarCenario(cenarioReceberReal(), 'receber (dump real HDL32p capturado)');
                 }
                 else {
                     this.executarCenario(cenarioReceberProgramacoes(getConfigRecebimento()), 'receber programações (dump sintético)');
@@ -246,6 +256,11 @@ export class CentralSimulator {
      */
     frameIdentificacao() {
         const modelo = getModeloSimulado().byte;
+        // HDL32p: devolve o RES_IDENTIF real capturado (traz versão/build que o
+        // builder sintético não preenche). Ver capturas-reais.ts.
+        if (modelo === CentraisHDL.HDL32p) {
+            return [...RES_IDENTIF_HDL32P];
+        }
         const data = new Array(15).fill(0);
         data[0] = modelo; // view[3]  modelo antigo (usado se versão nível 1 < 2)
         data[1] = 2; // view[4]  versão nível 1 >= 2 => usa o "modelo novo" (view[12])
@@ -253,6 +268,18 @@ export class CentralSimulator {
         data[8] = 1; // view[11] ctiSuportado
         data[9] = modelo; // view[12] modelo novo
         return buildFrame(ComandosPABX.RES_IDENTIF, data);
+    }
+    /**
+     * Quadros que a central emite sozinha, periodicamente. Numa HDL32p real são
+     * dois: o relógio (INFO_DATAHORA) e um heartbeat de status
+     * (INFO_RAMAL_TDI_2 — o `fa 16 00 …` capturado). Nos outros modelos, só o
+     * relógio (não há captura do heartbeat deles).
+     */
+    enviarAmbiente() {
+        this.enviarDataHora();
+        if (getModeloSimulado().byte === CentraisHDL.HDL32p) {
+            this.push([...STATUS_HEARTBEAT_HDL32P]);
+        }
     }
     enviarDataHora() {
         const now = new Date();

@@ -6,11 +6,15 @@ import { logger } from '../logger.js';
  * está desconectado, e o `SerialConnector` cria/descarta várias instâncias de
  * `SerialConnection`/transporte por sessão.
  */
-/** Resolve `CENTRIX_SIM_MODELO` (byte "0x13"/"19" ou nome "HDL256p"). */
+/**
+ * Resolve `CENTRIX_SIM_MODELO` (byte "0x24"/"36" ou nome "HDL32p"). Sem env, o
+ * padrão é HDL32p — é o modelo de que temos captura real (handshake, dump de
+ * "Receber" e heartbeat vêm de `capturas-reais.ts`).
+ */
 function resolverModeloDoEnv() {
     const raw = (process.env.CENTRIX_SIM_MODELO ?? '').trim();
     if (!raw) {
-        return CentraisHDL.HDL256p;
+        return CentraisHDL.HDL32p;
     }
     const comoNumero = raw.toLowerCase().startsWith('0x')
         ? parseInt(raw, 16)
@@ -19,7 +23,7 @@ function resolverModeloDoEnv() {
         return comoNumero & 0xff;
     }
     const porNome = Object.entries(CentraisHDL).find(([nome]) => nome.toLowerCase() === raw.toLowerCase());
-    return porNome ? porNome[1] : CentraisHDL.HDL256p;
+    return porNome ? porNome[1] : CentraisHDL.HDL32p;
 }
 let modelo = resolverModeloDoEnv();
 /** Modelo (byte) que o RES_IDENTIF vai devolver no PRÓXIMO handshake. */
